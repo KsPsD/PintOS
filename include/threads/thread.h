@@ -125,6 +125,7 @@ int64_t get_next_tick_to_awake(void);
 
 /* -------- project1: priority scheduling ---------*/
 void test_max_priority (void);
+
 /* -------- project1 end ---------*/
 bool cmp_priority (const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
 

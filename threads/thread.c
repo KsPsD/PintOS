@@ -721,7 +721,7 @@ thread_sleep (int64_t ticks) {
 
 		thread_block();										  // block 상태로 변경
 		
-		intr_set_level(old_level); // interrupt on
+		intr_set_level(old_level);  // interrupt on
 	}
 }
 
@@ -751,7 +751,6 @@ thread_awake (int64_t wakeup_tick){
 			update_next_tick_to_awake(th->wakeup_tick);
 		}
 	}
-
 }
 
 /* ----- project1: alarm clock ----- */
