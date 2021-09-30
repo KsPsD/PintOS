@@ -16,6 +16,10 @@ bool sema_try_down (struct semaphore *);
 void sema_up (struct semaphore *);
 void sema_self_test (void);
 
+// /* ----- project1: priority scheduling(2) ----- */
+// bool sema_compare_priority(const struct list_elem *, const struct list_elem *, void *);
+
+
 /* Lock. */
 struct lock {
 	struct thread *holder;      /* Thread holding lock (for debugging). */
