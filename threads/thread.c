@@ -170,7 +170,8 @@ thread_tick (void) {
 		kernel_ticks++;
 
 	/* Enforce preemption. */
-	// 4 tick 마다 intr_yield_on() --> thread_yield() -> schedule() -> thread_ticks 초기화
+	// 4 tick 마다 intr_yield_on() --> inr_handler 마지막 thread_yield()
+	// -> schedule() -> thread_ticks 초기화
 	if (++thread_ticks >= TIME_SLICE)
 		intr_yield_on_return ();
 }
@@ -184,7 +185,7 @@ thread_print_stats (void) {
 			idle_ticks, kernel_ticks, user_ticks);
 }
 
-/* Creates a new kernel thread named NAME with the given initial
+/* Creates a new kernel thread named NAME with the given initial <- 여기선 항상 kernel thread 만 만드는건가??
    PRIORITY, which executes FUNCTION passing AUX as the argument,
    and adds it to the ready queue.  Returns the thread identifier
    for the new thread, or TID_ERROR if creation fails.
@@ -290,8 +291,6 @@ thread_unblock (struct thread *t) {
 
 	t->status = THREAD_READY;
 
-
-
 	intr_set_level (old_level);
 }
 
@@ -378,7 +377,7 @@ thread_set_priority (int new_priority) {
 	// thread_current ()->priority = new_priority;
 
 	/* ----- project1: priority scheduling ----- */
-	if (!thread_mlfqs) {
+	if (!thread_mlfqs) { // priority가 조정되는 mlfqs가 발생하면 false
 		int previous_priority = thread_current()->priority;
 		thread_current()->priority = new_priority;
 
@@ -702,12 +701,12 @@ allocate_tid (void) {
 
 /* ----- project1: alarm clock ----- */
 void
-thread_sleep (int64_t ticks) {
-	struct thread *this;
-	this = thread_current();
+thread_sleep (int64_t ticks) { // from timer_sleep (start + ticks)
+	struct thread *cur;
+	cur = thread_current();
 
 	// idle -> stop: idle_thread cannot sleep
-	if (this == idle_thread) {
+	if (cur == idle_thread) {
 		ASSERT(0);
 	}
 	else {
@@ -715,9 +714,9 @@ thread_sleep (int64_t ticks) {
 		
 		old_level = intr_disable(); // interrupt off
 
-		update_next_tick_to_awake(this->wakeup_tick = ticks); // 일어날 시간 저장
+		update_next_tick_to_awake(cur->wakeup_tick = ticks); // 일어날 시간 저장
 
-		list_push_back(&sleep_list, &this->elem); 			  // sleep_list에 추가
+		list_push_back(&sleep_list, &cur->elem); 			  // sleep_list에 추가
 
 		thread_block();										  // block 상태로 변경
 		
@@ -727,20 +726,20 @@ thread_sleep (int64_t ticks) {
 
 /* ----- project1: alarm clock ----- */
 void
-thread_awake (int64_t wakeup_tick){
+thread_awake (int64_t wakeup_tick){ // from timer_interrupt. 즉 매 초마다 awake 할 게 있는지 확인후 있으면 이 함수 실행
 	next_tick_to_awake = INT64_MAX;
 
 	// take a sleeping thread
 	struct list_elem *sleeping;
 	sleeping = list_begin(&sleep_list);
 
-	// sleep_list 순회 -> 깨워야 할 스레드를 sleep_lsit에서 제거하고 unblock
+	// sleep_list 순회 -> 깨워야 할 스레드를 sleep_list에서 제거하고 unblock
 	while (sleeping != list_end(&sleep_list)){
 		struct thread *th = list_entry(sleeping, struct thread, elem);
 
 		// 일어날 시간이 된 스레드
 		if (wakeup_tick >= th->wakeup_tick) {	// 스레드가 일어날 시간이 되었는지 확인
-			sleeping = list_remove(&th->elem); 	// sleep_list에서 제거
+			sleeping = list_remove(&th->elem); 	// sleep_list에서 제거 후 next를 가리킴
 			thread_unblock(th);					// unblock thread -> ready_list에 넣는다
 		}
 		// 일어날 시간이 안된 스레드
@@ -757,8 +756,7 @@ thread_awake (int64_t wakeup_tick){
 void
 update_next_tick_to_awake(int64_t ticks){
 	// find smallest tick
-	next_tick_to_awake = (next_tick_to_awake > ticks) ? ticks:
-		next_tick_to_awake; 
+	next_tick_to_awake = (next_tick_to_awake > ticks) ? ticks : next_tick_to_awake; 
 }
 
 int64_t
@@ -773,14 +771,14 @@ get_next_tick_to_awake(void){
  * 우선순위 대소비교 후 yield() 수행 */
 void
 test_max_priority(void) {
-	struct thread *cp = thread_current();
+	struct thread *cur = thread_current();
 	struct thread *first_thread;
 
 	if (list_empty(&ready_list)) return;
 
 	first_thread = list_entry(list_front(&ready_list), struct thread, elem);
 
-	if (cp->priority < first_thread->priority){		// 우선순위 대소비교
+	if (cur->priority < first_thread->priority){		// 우선순위 대소비교
 		thread_yield();
 	}
 }

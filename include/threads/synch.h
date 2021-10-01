@@ -33,6 +33,8 @@ void lock_release (struct lock *);
 bool lock_held_by_current_thread (const struct lock *);
 
 /* Condition variable. */
+// thread를 기다리게 하거나, waiters에서 기다리고 있는 thread들에게 signal을 보낼 수 있다.
+// wating list에 들어가는 것이 thread인가 semaphore인가..?
 struct condition {
 	struct list waiters;        /* List of waiting threads. */
 };

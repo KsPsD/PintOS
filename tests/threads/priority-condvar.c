@@ -21,7 +21,7 @@ test_priority_condvar (void)
   /* This test does not work with the MLFQS. */
   ASSERT (!thread_mlfqs);
 
-  lock_init (&lock);
+  lock_init (&lock); // sema 1로 설정
   cond_init (&condition);
 
   thread_set_priority (PRI_MIN);

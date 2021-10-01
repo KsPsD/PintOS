@@ -92,7 +92,7 @@ timer_elapsed (int64_t then) {
 void
 timer_sleep (int64_t ticks) {
 
-	int64_t start = timer_ticks ();
+	int64_t start = timer_ticks (); // os 부팅 후 ticks
 
 	ASSERT (intr_get_level () == INTR_ON);
 	// // original code
@@ -133,7 +133,7 @@ timer_interrupt (struct intr_frame *args UNUSED) {
 	/* 1 tick마다 timer_interrupt 수행됨 --> 
 	 * timer_interrupt에 awake함수 포함시키면 깨워야 할 스레드 찾고 깨울 수 있음 */
 
-	ticks++;		// Number of timer ticks since OS booted
+	ticks++;		// Number of timer ticks since OS booted. 매 tick 마다 호출되므로
 	thread_tick ();	// 스레드 tick 통계 + 스레드 양보 시간 확인(4 tick마다 교체)
 
 	/* ----- project1: alarm clock ----- */

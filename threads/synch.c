@@ -68,7 +68,7 @@ sema_down (struct semaphore *sema) {
 	// sema->value == 0이면 waiter리스트에 추가하고 기다린다
 	while (sema->value == 0) {
 		// // 원래 코드
-		// list_push_back (&sema->waiters, &thread_current ()->elem);
+		// list_push_back (&sema->waiters, &thread_current ()->elem); // -> list_insert
 
 		/* ----- project1: priority scheduling-sync ----- */
 		list_insert_ordered(&sema->waiters, &thread_current()->elem, cmp_priority, NULL);
@@ -115,7 +115,7 @@ sema_up (struct semaphore *sema) {
 
 	old_level = intr_disable ();	// 인터럽트 끄기
 
-	if (!list_empty (&sema->waiters)) {
+	if (!list_empty (&sema->waiters)) { // sema_down에서 추가됨
 
 		/* ----- project1: priority scheduling-sync ----- */
 		list_sort(&sema->waiters, cmp_priority, NULL);	// waiters 우선순위 변경 생겼을 수 있으므로 내림차순 정렬
@@ -346,11 +346,11 @@ cond_broadcast (struct condition *cond, struct lock *lock) {
 
 /* ----- project1: priority scheduling (2) ----- */
 bool
-sema_compare_priority (const struct list_elem *l, const struct list_elem *s, void *aux UNUSED){
+sema_compare_priority (const struct list_elem *l, const struct list_elem *s, void *aux UNUSED){ // 인자가 semaphore의 list_elem
 	struct semaphore_elem *l_sema = list_entry(l, struct semaphore_elem, elem);
 	struct semaphore_elem *s_sema = list_entry(s, struct semaphore_elem, elem);
 
-	struct list *waiter_l_sema = &(l_sema->semaphore.waiters);
+	struct list *waiter_l_sema = &(l_sema->semaphore.waiters); // sema_up을 기다리고 있는 waiting threads
 	struct list *waiter_s_sema = &(s_sema->semaphore.waiters);
 
 	return list_entry (list_begin (waiter_l_sema), struct thread, elem)->priority 

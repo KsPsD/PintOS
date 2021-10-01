@@ -156,9 +156,9 @@ list_tail (struct list *list) {
    interior element or a tail.  The latter case is equivalent to
    list_push_back(). */
 void
-list_insert (struct list_elem *before, struct list_elem *elem) {
+list_insert (struct list_elem *before, struct list_elem *elem) { //
 	ASSERT (is_interior (before) || is_tail (before));
-	ASSERT (elem != NULL);
+	ASSERT (elem != NULL); //
 
 	// prev -- ELEM -- before -- ... -> before 앞에 삽입
 	elem->prev = before->prev;
