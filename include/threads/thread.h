@@ -91,6 +91,14 @@ struct thread {
 	enum thread_status status;          /* Thread state. */
 	char name[16];                      /* Name (for debugging purposes). */
 	int priority;                       /* Priority. */
+	
+	/*-------Project 1, priority_donation------*/
+	int init_priority; // thread 양도 받았다가 다시 반납할 때 원래의 priority 복원 위해
+
+	struct lock *wait_on_lock; // thread가 현재 얻기 위해 기다리고 있는 lock으로 스레드는 이 lock이 release되기를 기다린다.
+	struct list donations; // 자신에게 priority를 나누어준 스레드들의 리스트
+	struct list_elem donation_elem; // donations list를 관리하기 위한 element로 thread 구조체의 그냥 elem과 구분하여 사용
+	/*-------Project 1 end------*/
 
 	int64_t wakeup_tick;				/* 깨어나야 할 tick값 project1: threads - alarm clock */
 

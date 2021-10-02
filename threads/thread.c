@@ -379,12 +379,15 @@ thread_set_priority (int new_priority) {
 	/* ----- project1: priority scheduling ----- */
 	if (!thread_mlfqs) { // priority가 조정되는 mlfqs가 발생하면 false
 		int previous_priority = thread_current()->priority;
-		thread_current()->priority = new_priority;
+		thread_current()->init_priority = new_priority;
+
+		refresh_priority ();
 
 		// priority 감소한 경우 --> ready_list의 head와 한번 더 비교
-		if (thread_current()->priority < previous_priority) {
-			test_max_priority();
-		}
+		test_max_priority();
+		// if (thread_current()->priority < previous_priority) {
+			// test_max_priority();
+		// }
 	}
 }
 
@@ -489,6 +492,13 @@ init_thread (struct thread *t, const char *name, int priority) {
 	t->tf.rsp = (uint64_t) t + PGSIZE - sizeof (void *);
 	t->priority = priority;			// priority 부여
 	t->magic = THREAD_MAGIC;
+	/*-----Project1_priority scheduling_donation----*/
+	// donation을 위한 변수들 초기화
+	t->init_priority = priority;
+	t->wait_on_lock = NULL;
+	list_init(&t->donations);
+	/*-----Project1 end----*/
+
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should
@@ -800,3 +810,56 @@ cmp_priority (const struct list_elem *a, const struct list_elem *b, void *aux UN
 	return false;
 
 }
+
+/*-----Project1_priority scheduling_donation----*/
+bool
+thread_compare_donate_priority (const struct list_elem *l, const struct list_elem *s, void *aux UNUSED)
+{
+	return list_entry (l, struct thread, donation_elem)->priority
+		 > list_entry (s, struct thread, donation_elem)->priority;
+}
+
+void
+donate_priority (void)
+{
+	int depth;
+	struct thread *cur = thread_current ();
+
+	for (depth = 0; depth < 8; depth++){
+		if (!cur->wait_on_lock) break;
+		struct thread *holder = cur->wait_on_lock->holder; // 여기서 holder는 처음에 lock을 갖지만 우선순위가 낮을 수 있는 스레드
+		holder->priority = cur->priority; // 우선순위가 낮을 수 있는 스레드에 현재 스레드의 priority 기부
+		cur = holder; // 현재 스레드가 lock을 가진 스레드????????????
+	}
+}
+
+void
+remove_with_lock (struct lock *lock)
+{
+	struct list_elem *e;
+	struct thread *cur = thread_current ();
+
+	for (e = list_begin (&cur->donations); e != list_end (&cur->donations); e = list_next (e)){
+		struct thread *t = list_entry (e, struct thread, donation_elem);
+		if (t->wait_on_lock == lock)
+			list_remove (&t->donation_elem);
+	}
+}
+
+void
+refresh_priority (void)
+{
+	struct thread *cur = thread_current ();
+
+	cur->priority = cur->init_priority;
+
+	if(!list_empty (&cur->donations)) {
+		list_sort (&cur->donations, thread_compare_donate_priority, 0);
+
+		struct thread *front = list_entry (list_front (&cur->donations), struct thread, donation_elem);
+		if (front->priority > cur->priority)
+			cur->priority = front->priority;
+	}
+}
+
+/*-----Project1 end----*/

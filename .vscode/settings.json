@@ -3,6 +3,7 @@
         "istream": "cpp",
         "thread.h": "c",
         "new": "cpp",
-        "synch.h": "c"
+        "synch.h": "c",
+        "round.h": "c"
     }
 }

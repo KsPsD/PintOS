@@ -32,6 +32,12 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 
+/*-----Project1_priority scheduling_donation----*/
+bool
+thread_compare_donate_priority (const struct list_elem *, const struct list_elem *, void *);
+/*-----Project1 end----*/
+
+
 /* Initializes semaphore SEMA to VALUE.  A semaphore is a
    nonnegative integer along with two atomic operators for
    manipulating it:
@@ -195,14 +201,35 @@ lock_init (struct lock *lock) {
    interrupt handler.  This function may be called with
    interrupts disabled, but interrupts will be turned back on if
    we need to sleep. */
+
+// lock_acquire을 요청하는 스레드는 lock을 가진 스레드보다 우선순위가 높다.
 void
 lock_acquire (struct lock *lock) {
 	ASSERT (lock != NULL);
 	ASSERT (!intr_context ());
 	ASSERT (!lock_held_by_current_thread (lock));
 
+	/*-----Project1_priority scheduling_donation----*/
+	// lock->holder->priority = thread_current ()->thread->priority;
+	struct thread *cur = thread_current ();
+	if (lock->holder){
+		cur->wait_on_lock = lock;
+		// 현재 스레드가 lock이 필요하므로
+		// lock 뺏는 스레드가 주체
+		list_insert_ordered (&lock->holder->donations, &cur->donation_elem,
+		thread_compare_donate_priority, 0);
+		// donation : 자신에게 priority를 나누어준 스레드 list. 여기에 donation_elem(list_elem) 추가
+		// lock 뺏기는 스레드가 주체
+		donate_priority (); //
+	}
+	/*-----Project1 end----*/
 	sema_down (&lock->semaphore);
-	lock->holder = thread_current ();
+	
+	/*-----Project1_priority scheduling_donation----*/
+	cur->wait_on_lock = NULL;
+	/*-----Project1 end----*/
+	
+	lock->holder = cur;
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
@@ -234,6 +261,12 @@ void
 lock_release (struct lock *lock) {
 	ASSERT (lock != NULL);
 	ASSERT (lock_held_by_current_thread (lock));
+
+	/*-----Project1_priority scheduling_donation----*/
+	remove_with_lock (lock);
+	refresh_priority ();
+	/*-----Project1 end----*/
+
 
 	lock->holder = NULL;
 	sema_up (&lock->semaphore);
