@@ -84,17 +84,23 @@ timer_ticks (void) {
    should be a value once returned by timer_ticks(). */
 int64_t
 timer_elapsed (int64_t then) {
+	/* 들어온 인자 시간으로부터 얼마나 시간(tick)이 지나갔는지 반환 */
 	return timer_ticks () - then;
 }
 
 /* Suspends execution for approximately TICKS timer ticks. */
 void
 timer_sleep (int64_t ticks) {
+
 	int64_t start = timer_ticks ();
 
 	ASSERT (intr_get_level () == INTR_ON);
-	while (timer_elapsed (start) < ticks)
-		thread_yield ();
+	// // original code
+	// while (timer_elapsed (start) < ticks)
+	// 	thread_yield ();
+
+	/* ----- project1: alarm clock ------ */
+	thread_sleep(start + ticks);	// 현재 진행중인 스레드를 재운다(일어날 시간: start + ticks로 지정)
 }
 
 /* Suspends execution for approximately MS milliseconds. */
@@ -124,8 +130,18 @@ timer_print_stats (void) {
 /* Timer interrupt handler. */
 static void
 timer_interrupt (struct intr_frame *args UNUSED) {
-	ticks++;
-	thread_tick ();
+	/* 1 tick마다 timer_interrupt 수행됨 --> 
+	 * timer_interrupt에 awake함수 포함시키면 깨워야 할 스레드 찾고 깨울 수 있음 */
+
+	ticks++;		// Number of timer ticks since OS booted
+	thread_tick ();	// 스레드 tick 통계 + 스레드 양보 시간 확인(4 tick마다 교체)
+
+	/* ----- project1: alarm clock ----- */
+	// 매 tick마다 sleep_list를 체크하며 깨어날 thread가 있는지 확인
+	// 다음으로 깨어나야 할 thread의 tick과 현재의 ticks값을 비교
+	if (get_next_tick_to_awake() <= ticks){ 
+		thread_awake(ticks);
+	}
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer

@@ -56,11 +56,13 @@ is_tail (struct list_elem *elem) {
 /* Initializes LIST as an empty list. */
 void
 list_init (struct list *list) {
+	/* head와 tail은 리스트의 처음과 끝을 가리킨다 */
+	// list: NULL - HEAD - TAIL - NULL
 	ASSERT (list != NULL);
-	list->head.prev = NULL;
-	list->head.next = &list->tail;
-	list->tail.prev = &list->head;
-	list->tail.next = NULL;
+	list->head.prev = NULL;			// head의 prev: NULL
+	list->head.next = &list->tail;	// head의 next: tail
+	list->tail.prev = &list->head;  // tail의 prev: head
+	list->tail.next = NULL;			// tail의 next: NULL
 }
 
 /* Returns the beginning of LIST.  */
@@ -158,6 +160,7 @@ list_insert (struct list_elem *before, struct list_elem *elem) {
 	ASSERT (is_interior (before) || is_tail (before));
 	ASSERT (elem != NULL);
 
+	// prev -- ELEM -- before -- ... -> before 앞에 삽입
 	elem->prev = before->prev;
 	elem->next = before;
 	before->prev->next = elem;
@@ -249,6 +252,7 @@ list_remove (struct list_elem *elem) {
    Undefined behavior if LIST is empty before removal. */
 struct list_elem *
 list_pop_front (struct list *list) {
+	/* 리스트의 맨 앞을 삭제하고 반환 */
 	struct list_elem *front = list_front (list);
 	list_remove (front);
 	return front;
@@ -424,9 +428,13 @@ list_insert_ordered (struct list *list, struct list_elem *elem,
 	ASSERT (elem != NULL);
 	ASSERT (less != NULL);
 
+	// 리스트 순회하면서 추가할 위치 찾기
+	// 앞쪽이 priority가 커야 함 -> 내림차순
 	for (e = list_begin (list); e != list_end (list); e = list_next (e))
+		// less함수: elem > e일때 참을 반환해야 함
 		if (less (elem, e, aux))
 			break;
+	// e_node에서 break: 앞에 추가
 	return list_insert (e, elem);
 }
 
