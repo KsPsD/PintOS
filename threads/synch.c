@@ -67,11 +67,11 @@ sema_down (struct semaphore *sema) {
 	old_level = intr_disable ();   // disable interrupt
 	// sema->value == 0이면 waiter리스트에 추가하고 기다린다
 	while (sema->value == 0) {
-		// // 원래 코드
-		// list_push_back (&sema->waiters, &thread_current ()->elem);
+		// 원래 코드
+		list_push_back (&sema->waiters, &thread_current ()->elem);
 
-		/* ----- project1: priority scheduling-sync ----- */
-		list_insert_ordered(&sema->waiters, &thread_current()->elem, cmp_priority, NULL);
+		// /* ----- project1: priority scheduling-sync ----- */
+		// list_insert_ordered(&sema->waiters, &thread_current()->elem, cmp_priority, NULL);
 		thread_block ();
 	}
 	sema->value--;
@@ -201,8 +201,24 @@ lock_acquire (struct lock *lock) {
 	ASSERT (!intr_context ());
 	ASSERT (!lock_held_by_current_thread (lock));
 
-	sema_down (&lock->semaphore);
-	lock->holder = thread_current ();
+	/* ----- project1: priority scheduling(3) ----- */
+	struct thread *cur = thread_current();
+	if (lock->holder) {				// lock holder가 이미 있다면
+		cur->wait_on_lock = lock;	// cur이 기다리는 lock 리스트에 추가
+		// lock_holder의 donation리스트에 cur 정렬하여 추가
+		// 굳이 정렬을 해야 하는지: 왜냐하면 계속 priority 갱신되기 때문에 항상 높은 것만 여기 들어올 것!
+		// list_push_back()을 사용해야 하는 것이 낫다
+		// list_insert_ordered(&lock->holder->donations, &cur->donation_elem,
+		// 					thread_compare_donate_priority, NULL);
+		list_push_front(&lock->holder->donations, &cur->donation_elem);
+		donate_priority();
+	}
+
+	sema_down (&lock->semaphore);		// lock하는 것은 semaphore을 0으로 만드는 행위
+
+	/* ----- project1: priority schduling(3) ----- */
+	cur->wait_on_lock = NULL;			// lock을 획득했으므로 기다리는 lock <- NULL
+	lock->holder = thread_current ();	// lock한 주체 저장
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
@@ -233,7 +249,12 @@ lock_try_acquire (struct lock *lock) {
 void
 lock_release (struct lock *lock) {
 	ASSERT (lock != NULL);
+	// lock을 해제하려는 주체(current running tread)가 lock을 한 스레드인지 확인
 	ASSERT (lock_held_by_current_thread (lock));
+
+	/* ----- project1: priority schedule(3) ----- */
+	remove_with_lock(lock);	// lock을 가진 cur running의 donation list에서 priority 빌려준 스레드 제거
+	refresh_priority();		// priority 재조정
 
 	lock->holder = NULL;
 	sema_up (&lock->semaphore);
@@ -292,18 +313,22 @@ cond_wait (struct condition *cond, struct lock *lock) {
 	ASSERT (cond != NULL);
 	ASSERT (lock != NULL);
 	ASSERT (!intr_context ());
-	ASSERT (lock_held_by_current_thread (lock));
+	ASSERT (lock_held_by_current_thread (lock)); // 현재 실행 스레드가 락을 건 스레드인지 확인
 
-	sema_init (&waiter.semaphore, 0);
-	// // 원래 코드
-	// list_push_back (&cond->waiters, &waiter.elem);
+	sema_init (&waiter.semaphore, 0);	// waiter.semaphore 0으로 초기화  --> 밑에 코드 sema_down에서 막힘
+										// 나중에 누군가 signal해주면서 sema_up을 해주면(--> ready상태로 만들고 running이 되면 그때 밑에 sema_down부터 실행)
+	// cond는 semaphore의 리스트: cond->waiters
+	// cond->waiters에 semaphore_elem.elem을 추가하는 과정
 
-	/* ----- project1: priority scheduling (2) ------ */
-	list_insert_ordered(&cond->waiters, &waiter.elem, sema_compare_priority, 0);
+	// 원래 코드
+	list_push_back (&cond->waiters, &waiter.elem);
 
-	lock_release (lock);
-	sema_down (&waiter.semaphore);
-	lock_acquire (lock);
+	// /* ----- project1: priority scheduling (2) ------ */
+	// list_insert_ordered(&cond->waiters, &waiter.elem, sema_compare_priority, 0);	// 
+
+	lock_release (lock);			// 락을 푸는 이유: 이친구는 이제 block상태가 될 것임(sema_down) -> 모니터에서 나감(unlock)
+	sema_down (&waiter.semaphore);	// blocking 상태로 들어가 다른 스레드가 sema_up을 해줘서 ready -> running되었을때 다시 여기부터 실행
+	lock_acquire (lock);			// 다시 모니터 내부로 들어온 것이므로 lock 획득
 }
 
 /* If any threads are waiting on COND (protected by LOCK), then
@@ -320,13 +345,12 @@ cond_signal (struct condition *cond, struct lock *lock UNUSED) {
 	ASSERT (!intr_context ());
 	ASSERT (lock_held_by_current_thread (lock));
 
-	if (!list_empty (&cond->waiters))
-
+	if (!list_empty (&cond->waiters)){
 		/* ----- project1: priority scheduling (2) ----- */
-		list_sort(&cond->waiters, sema_compare_priority, 0);
-
-		sema_up (&list_entry (list_pop_front (&cond->waiters),
-					struct semaphore_elem, elem)->semaphore);
+		list_sort(&cond->waiters, sema_compare_priority, 0);  	// wait 도중 priority 바뀔 수 있으니 sort를 한다고 한다..?
+		sema_up (&list_entry (list_pop_front (&cond->waiters),	// unblock -> ready상태로 만듦
+					struct semaphore_elem, elem)->semaphore);	
+	}
 }
 
 /* Wakes up all threads, if any, waiting on COND (protected by
@@ -350,9 +374,33 @@ sema_compare_priority (const struct list_elem *l, const struct list_elem *s, voi
 	struct semaphore_elem *l_sema = list_entry(l, struct semaphore_elem, elem);
 	struct semaphore_elem *s_sema = list_entry(s, struct semaphore_elem, elem);
 
+	// **** 주어진 list_elem의 주소 l로 이것이 포함된 진정한 semaphore_elem의 주소를 구하는 매크로 함수
+	// 구조체 구조 파악: 
+    // struct semaphore_elem { struct list_elem elem{
+    //  											struct list_elem *prev,
+    //											    struct list_elem *next },
+    //						  struct semaphore semaphore{
+    //  											unsigned value,
+    //											    struct list waiters{
+    //														struct list_elem head,	
+    //														struct list_elem tail }}
+ 
+    // elem.next 멤버만큼 offset 왼쪽으로 이동하면 struct semaphore_elem의 주소 --> 이후 캐스팅
+    //    (struct semaphore_elem *)       & elem->next
+    //                        |<-offset()->|     
+    // in memory...    		  V            V
+    // sturct semaphore_elem: || elem.prev | elem.next || semaphore.value | semaphore.waiters...|| 
+	//						  ^            ^                              |
+	//	    l_sema, s_sema 여기		     여기 l.next, s.next              ^
+	//										waiter_l_sema, waiter_s_sema 여기
+
 	struct list *waiter_l_sema = &(l_sema->semaphore.waiters);
 	struct list *waiter_s_sema = &(s_sema->semaphore.waiters);
 
-	return list_entry (list_begin (waiter_l_sema), struct thread, elem)->priority 
+	// l_sema.semaphore의 waiting_list의 첫번째 원소의 priority와
+	// s_sema.semaphore의 waiting_list의 첫번째 원소의 priority 대소 비교
+	// 즉, 세마포어가 가지는 waiting_list의 첫번째 스레드들의 priority를 비교하기 위함
+	return list_entry (list_begin (waiter_l_sema), struct thread, elem)->priority     
 			> list_entry (list_begin (waiter_s_sema), struct thread, elem)->priority;
 }
+
