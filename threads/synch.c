@@ -263,7 +263,7 @@ lock_release (struct lock *lock) {
 	ASSERT (lock_held_by_current_thread (lock));
 
 	/*-----Project1_priority scheduling_donation----*/
-	remove_with_lock (lock);
+	remove_with_lock (lock); // donation 리스트에서 lock 요청했던(high priority) 스레드 삭제
 	refresh_priority ();
 	/*-----Project1 end----*/
 

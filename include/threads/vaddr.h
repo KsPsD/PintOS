@@ -16,22 +16,24 @@
 
 /* Page offset (bits 0:12). */
 #define PGSHIFT 0                          /* Index of first offset bit. */
-#define PGBITS  12                         /* Number of offset bits. */
+#define PGBITS  12                         /* Number of offset bits.(of virtual address) */
 #define PGSIZE  (1 << PGBITS)              /* Bytes in a page. */
 #define PGMASK  BITMASK(PGSHIFT, PGBITS)   /* Page offset bits (0:12). */
 
 /* Offset within a page. */
-#define pg_ofs(va) ((uint64_t) (va) & PGMASK)
-
-#define pg_no(va) ((uint64_t) (va) >> PGBITS)
+#define pg_ofs(va) ((uint64_t) (va) & PGMASK) /* Extracts and returns the page offset in virtual address va */
+#define pg_no(va) ((uint64_t) (va) >> PGBITS) /* Extracts and returns the page number in virtual address va*/
 
 /* Round up to nearest page boundary. */
 #define pg_round_up(va) ((void *) (((uint64_t) (va) + PGSIZE - 1) & ~PGMASK))
 
 /* Round down to nearest page boundary. */
+// returns the start of the virtual page that va points within, that is, va with the page offset set to 0
 #define pg_round_down(va) (void *) ((uint64_t) (va) & ~PGMASK)
 
 /* Kernel virtual address start */
+// user virtual memory 0 ~ KERN_BASE. kernel virtual memory는 나머지 가상 주소 공간
+// 기본값 0x8004000000
 #define KERN_BASE LOADER_KERN_BASE
 
 /* User stack start */

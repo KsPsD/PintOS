@@ -1,3 +1,12 @@
+/*
+#은 전처리기를 호출하는 특별한 문법이다. 그래서 #include도 전처리기이다.
+#include 지시자는 헤더 파일(.h)와 소스 파일(.c)를 포함
+헤더파일 지정시
+  1) <> : 보통 C언어 표준 라이브러리의 헤더 파일을 포함할 때 사용. 또한 컴파일 옵션에서 지정한 헤더 파일 경로를 따른다.
+  2) " " : 현재 소스 파일을 기준으로 헤더 파일을 포함. 찾지 못할 경우 컴파일 옵션에서 지정한 헤더 파일 경로를 따른다.
+
+*/ 
+
 #include "threads/thread.h"
 #include <debug.h>
 #include <stddef.h>
@@ -384,10 +393,10 @@ thread_set_priority (int new_priority) {
 		refresh_priority ();
 
 		// priority 감소한 경우 --> ready_list의 head와 한번 더 비교
-		test_max_priority();
-		// if (thread_current()->priority < previous_priority) {
-			// test_max_priority();
-		// }
+		// test_max_priority();
+		if (thread_current()->priority < previous_priority) {
+			test_max_priority();
+		}
 	}
 }
 
@@ -721,13 +730,10 @@ thread_sleep (int64_t ticks) { // from timer_sleep (start + ticks)
 	}
 	else {
 		enum intr_level old_level;
-		
 		old_level = intr_disable(); // interrupt off
-
+		
 		update_next_tick_to_awake(cur->wakeup_tick = ticks); // 일어날 시간 저장
-
 		list_push_back(&sleep_list, &cur->elem); 			  // sleep_list에 추가
-
 		thread_block();										  // block 상태로 변경
 		
 		intr_set_level(old_level);  // interrupt on
@@ -829,7 +835,7 @@ donate_priority (void)
 		if (!cur->wait_on_lock) break;
 		struct thread *holder = cur->wait_on_lock->holder; // 여기서 holder는 처음에 lock을 갖지만 우선순위가 낮을 수 있는 스레드
 		holder->priority = cur->priority; // 우선순위가 낮을 수 있는 스레드에 현재 스레드의 priority 기부
-		cur = holder; // 현재 스레드가 lock을 가진 스레드????????????
+		cur = holder; // 한칸 깊숙히 들어감. lock을 가졌던 thread(lock->holder)를 cur (thread)로 변경
 	}
 }
 
@@ -841,7 +847,7 @@ remove_with_lock (struct lock *lock)
 
 	for (e = list_begin (&cur->donations); e != list_end (&cur->donations); e = list_next (e)){
 		struct thread *t = list_entry (e, struct thread, donation_elem);
-		if (t->wait_on_lock == lock)
+		if (t->wait_on_lock == lock) // 현재 스레드가 들고있는 lock을 필요로 하는 스레드 찾기
 			list_remove (&t->donation_elem);
 	}
 }

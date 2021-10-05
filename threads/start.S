@@ -147,6 +147,6 @@ entry_64:
 	#### We will use 0 ~ 0x1000 as boot stack.
 	xor %rbp, %rbp
 	movabs $(LOADER_KERN_BASE + 0x1000), %rsp
-	movabs $main, %rax
+	movabs $main, %rax # 메인을 부름
 	call *%rax
 .endfunc
