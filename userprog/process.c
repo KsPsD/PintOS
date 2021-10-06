@@ -18,6 +18,7 @@
 #include "threads/mmu.h"
 #include "threads/vaddr.h"
 #include "intrinsic.h"
+#include "lib/stdio.h"
 #ifdef VM
 #include "vm/vm.h"
 #endif
@@ -51,7 +52,7 @@ tid_t process_create_initd(const char *file_name)
 	strlcpy(fn_copy, file_name, PGSIZE);
 
 	/* Create a new thread to execute FILE_NAME. */
-	tid = thread_create(file_name, PRI_MAX, initd, fn_copy);
+	tid = thread_create(file_name, PRI_DEFAULT, initd, fn_copy);
 	if (tid == TID_ERROR)
 		palloc_free_page(fn_copy);
 	return tid;
@@ -206,8 +207,8 @@ int process_wait(tid_t child_tid UNUSED)
 	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
-	// while (1)
-	// 	;
+	for (int i = 0; i < 1000000; i++)
+		;
 	return -1;
 }
 
@@ -340,8 +341,8 @@ load(const char *file_name, struct intr_frame *if_)
 	// printf("%s\n", file_name);
 	//각종 변수들 토큰이랑 인자들
 	int argc = 0;
-	char *argv[128];
-	char copy_file[128];
+	char *argv[64];
+	char copy_file[64];
 	memcpy(copy_file, file_name, strlen(file_name) + 1);
 	// printf(" %s \n", copy_file);
 	char *next;
@@ -441,13 +442,17 @@ load(const char *file_name, struct intr_frame *if_)
 		goto done;
 
 	/* Start address. */
+
 	if_->rip = ehdr.e_entry;
+
+	// printf("here \n");
 
 	/* TODO: Your code goes here.
 	 * TODO: Implement argument passing (see project2/argument_passing.html). */
 	// printf("argc %d", argc);
 	stack_argument(argv, argc, if_);
 
+	hex_dump(if_->rsp, if_->rsp, USER_STACK - if_->rsp, true);
 	// printf("here");
 
 	success = true;
@@ -460,7 +465,7 @@ done:
 
 void stack_argument(char *argv[], int cnt, struct intr_frame *if_)
 {
-	char *addr[128];
+	char *addr[64];
 	for (int i = cnt - 1; i >= 0; i--)
 	{
 		int arg_len = strlen(argv[i]);
