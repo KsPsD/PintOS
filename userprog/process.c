@@ -50,8 +50,13 @@ process_create_initd (const char *file_name) {
 		return TID_ERROR;
 	strlcpy (fn_copy, file_name, PGSIZE);
 
+	/*------- Project 2-1. Pass args - extract program name -------*/
+	char *save_ptr;
+	strtok_r(file_name, " ", &save_ptr);
+	/*------- Project 2-1. end -------*/
+
 	/* Create a new thread to execute FILE_NAME. */
-	tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
+	tid = thread_create (file_name, PRI_MAX, initd, fn_copy);
 	if (tid == TID_ERROR)
 		palloc_free_page (fn_copy);
 	return tid;
@@ -164,6 +169,7 @@ int
 process_exec (void *f_name) {
 	char *file_name = f_name;
 	bool success;
+	struct thread *cur = thread_current();
 
 	/* We cannot use the intr_frame in the thread structure.
 	 * This is because when current thread rescheduled,
@@ -176,18 +182,95 @@ process_exec (void *f_name) {
 	/* We first kill the current context */
 	process_cleanup ();
 
+
+	/*--------Project 2-1. Pass args - parse ----------*/
+	char *argv[30];
+	int argc = 0;
+	// file_name : _Hi there
+	char *token, *save_ptr;
+	token = strtok_r(file_name, " ", &save_ptr); // Hi return
+	while (token != NULL)
+	{
+		argv[argc] = token; // argv[0] = Hi (file_name 처음부분)을 시작으로 하나씩 채움
+		// 첫 번째 인자가 NULL인 경우, s = *save_ptr이므로 그 다음 문자에 포인터 가리킴
+		token = strtok_r(NULL, " ", &save_ptr); // 그 다음 문자열 차례로
+		// printf("argv[%d] : %s\n", argc, argv[argc]);
+		argc++;
+	}
+	/*--------Project 2-1. end ----------*/
+
 	/* And then load the binary */
 	success = load (file_name, &_if);
 
 	/* If load failed, quit. */
-	palloc_free_page (file_name);
-	if (!success)
+	
+	if (!success){
+		palloc_free_page (file_name);
 		return -1;
+	}
+
+	/*------- Project 2-1. Pass args - load arguments onto the user stack--------*/
+	void **rspp = &_if.rsp;
+
+	load_userStack(argv, argc, rspp);
+	_if.R.rdi = argc; // Extended Destination Index
+	_if.R.rsi = (uint64_t)*rspp + sizeof(void *); // Extended Source Index
+	/*------- Project 2-1. end-------*/
+
+	/* pintos에서 제공하는 디버깅 툴
+	 * 메모리 내용을 16진수로 화면에 출력
+	 * 유저 스택에 인자를 저장 후 유저 스택 메모리 확인
+	 */
+	hex_dump(_if.rsp, _if.rsp, USER_STACK - (uint64_t)*rspp, true); // #ifdef DEBUG
+
+	palloc_free_page (file_name);
 
 	/* Start switched process. */
 	do_iret (&_if);
 	NOT_REACHED ();
 }
+
+/*------- Project 2-1. Pass args - Load user stack with arguments -------*/
+void load_userStack(char **argv, int argc, void **rspp)
+{
+	// 1. Save argument strings (character by character)
+	for (int i = argc - 1; i >= 0; i--)
+	{
+		int N = strlen(argv[i]);
+		for (int j = N; j >= 0; j--)
+		{
+			char individual_character = argv[i][j];
+			(*rspp)--;
+			**(char **)rspp = individual_character; // 1 byte
+		}
+		argv[i] = *(char **)rspp; // push this address too
+	}
+
+	// 2. Word-align padding
+	int pad = (int)*rspp % 8;
+	for (int k = 0; k < pad; k++)
+	{
+		(*rspp)--;
+		**(uint8_t **)rspp = (uint8_t)0; // 1 byte
+	}
+
+	// 3. Pointers to the argument strings
+	size_t PTR_SIZE = sizeof(char *);
+
+	(*rspp) -= PTR_SIZE;
+	**(char ***)rspp = (char *)0;
+
+	for (int i = argc - 1; i >= 0; i--)
+	{
+		(*rspp) -= PTR_SIZE;
+		**(char ***)rspp = argv[i];
+	}
+
+	// 4. Return address
+	(*rspp) -= PTR_SIZE;
+	**(void ***)rspp = (void *)0;
+}
+/*------- Project 2-1. end -------*/
 
 
 /* Waits for thread TID to die and returns its exit status.  If

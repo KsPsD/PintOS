@@ -51,9 +51,9 @@ typedef int tid_t;
  *           |                                 |
  *           |                                 |
  *           +---------------------------------+
- *           |              magic              |
- *           |            intr_frame           |
- *           |                :                |
+ *           |              magic              | <- magic 넘어가면 overflow
+ *           |            intr_frame           | 
+ *           |                :                | 이 구간이 스레드의 PBC에 해당
  *           |                :                |
  *           |               name              |
  *           |              status             |
@@ -99,8 +99,14 @@ struct thread {
 	struct list donations; // 자신에게 priority를 나누어준 스레드들의 리스트
 	struct list_elem donation_elem; // donations list를 관리하기 위한 element로 thread 구조체의 그냥 elem과 구분하여 사용
 	/*-------Project 1 end------*/
+	
+	/*-------Project 1, alarm clock------*/
+	int64_t wakeup_tick;				// 깨어나야 할 tick값
+	/*-------Project 1 end------*/
 
-	int64_t wakeup_tick;				/* 깨어나야 할 tick값 project1: threads - alarm clock */
+	/*-------Project 2-2. syscalls------*/
+	int exit_status;
+	/*-------Project 2-2. end------*/
 
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */

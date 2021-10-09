@@ -11,6 +11,10 @@
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
 
+
+void halt(void);
+void exit(int status);
+
 /* System call.
  *
  * Previously system call services was handled by the interrupt handler
@@ -18,7 +22,8 @@ void syscall_handler (struct intr_frame *);
  * efficient path for requesting the system call, the `syscall` instruction.
  *
  * The syscall instruction works by reading the values from the the Model
- * Specific Register (MSR). For the details, see the manual. */
+ * Specific Register (MSR). For the details, see the manual. 
+ * Model Specific Register는 control register로서 대표적으로 test나 debugging에 쓰임.*/
 
 #define MSR_STAR 0xc0000081         /* Segment selector msr */
 #define MSR_LSTAR 0xc0000082        /* Long mode SYSCALL target */
@@ -38,9 +43,58 @@ syscall_init (void) {
 }
 
 /* The main system call interface */
+/* system call handler가 control을 가질 때,
+ * system call number 가 rax에 있고 %rdi, %rsi, %rdx, %r10, %r8 and %r9 순서로 arguments가 전달됨
+ * caller's register은 struct intr_frame에 접근 가능. (intr_frame 은 kernel stack에 있음)
+ */
 void
 syscall_handler (struct intr_frame *f UNUSED) {
 	// TODO: Your implementation goes here.
+	
+	/*------- Project 2-2. syscalls ------*/
+	char *fn_copy;
+	int siz;
+
+	switch (f->R.rax)
+	{
+		case SYS_HALT:
+			halt();
+			break;
+		case SYS_EXIT:
+			exit(f->R.rdi);
+			break;
+	}
+	/*------- Project 2-2. end ------*/
+
 	printf ("system call!\n");
 	thread_exit ();
 }
+
+/*------- Project 2-2. syscalls ------*/
+// Terminates Pintos by calling power_off(). No return
+void halt(void)
+{
+	power_off();
+}
+
+// Terminates the current user program, returning status to the kernel
+// End current thread, record exit status
+// conventionally, status = 0은 성공, 0아닌 경우 에러를 나타냄
+void exit(int status)
+{
+	struct thread *cur = thread_current();
+	cur->exit_status = status;
+
+	printf("%s, exit(%d\n", thread_name(), status); // Process Termination Message
+	thread_exit();
+}
+
+// parent : returns pid of child on success or -1 on fail
+// child : Returns 0
+// %RBX, %RSP, %RBP, %R12, %R15 들은 callee-saved registers이므로 clone할 필요 없다. (?)
+tid_t fork(const char *thread_name, struct intr_frame *f)
+{
+	return preocess_fork(thread_name, f);
+}
+
+/*------- Project 2-2. end ------*/

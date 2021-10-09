@@ -243,13 +243,15 @@ strtok_r (char *s, const char *delimiters, char **save_ptr) {
 
 	/* Skip any non-DELIMITERS up to the end of the string. */
 	token = s;
+	// 문자 다 지나고 띄어쓰기 or \0 까지 감
 	while (strchr (delimiters, *s) == NULL)
 		s++;
+	// 띄어쓰기 인 경우 NULL(\0) 처리
 	if (*s != '\0') {
 		*s = '\0';
-		*save_ptr = s + 1;
+		*save_ptr = s + 1; // 그 다음 문자
 	} else
-		*save_ptr = s;
+		*save_ptr = s; // null이란 뜻은 문장이 끝나서 더이상 인자가 없다는 뜻
 	return token;
 }
 
