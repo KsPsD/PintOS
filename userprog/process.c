@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+/*-------- Project 2-2. syscall -------*/
+#include "userprog/process.h"
+/*-------- Project 2-2. end -------*/
 #include "userprog/gdt.h"
 #include "userprog/tss.h"
 #include "filesys/directory.h"
@@ -17,6 +20,7 @@
 #include "threads/thread.h"
 #include "threads/mmu.h"
 #include "threads/vaddr.h"
+#include "threads/synch.h"
 #include "intrinsic.h"
 #ifdef VM
 #include "vm/vm.h"
@@ -26,12 +30,32 @@ static void process_cleanup (void);
 static bool load (const char *file_name, struct intr_frame *if_);
 static void initd (void *f_name);
 static void __do_fork (void *);
+struct thread *get_child_with_pid(int);
 
-/* General process initializer for initd and other process. */
-static void
-process_init (void) {
-	struct thread *current = thread_current ();
+/*-------- Project 2-2. syscall_fork -------*/
+struct thread *get_child_with_pid(int pid)
+{
+	struct thread *cur = thread_current();
+	struct list *child_list = &cur->child_list;
+
+#ifdef DEBUG_WAIT
+	//printf("\nparent children # : %d\n", list_size(child_list));
+#endif
+	for (struct list_elem *e = list_begin(child_list); e != list_end(child_list); e = list_next(e))
+	{
+		struct thread *t = list_entry(e, struct thread, child_elem);
+		if (t->tid == pid)
+			return t;
+	}
+	return NULL;
 }
+/*-------- Project 2-2. end -------*/
+
+// /* General process initializer for initd and other process. */
+// static void
+// process_init (void) {
+// 	struct thread *current = thread_current ();
+// }
 
 /* Starts the first userland program, called "initd", loaded from FILE_NAME.
  * The new thread may be scheduled (and may even exit)
@@ -42,7 +66,6 @@ tid_t
 process_create_initd (const char *file_name) {
 	char *fn_copy;
 	tid_t tid;
-
 	/* Make a copy of FILE_NAME.
 	 * Otherwise there's a race between the caller and load(). */
 	fn_copy = palloc_get_page (0);
@@ -56,7 +79,7 @@ process_create_initd (const char *file_name) {
 	/*------- Project 2-1. end -------*/
 
 	/* Create a new thread to execute FILE_NAME. */
-	tid = thread_create (file_name, PRI_MAX, initd, fn_copy);
+	tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
 	if (tid == TID_ERROR)
 		palloc_free_page (fn_copy);
 	return tid;
@@ -65,11 +88,12 @@ process_create_initd (const char *file_name) {
 /* A thread function that launches first user process. */
 static void
 initd (void *f_name) {
+	
 #ifdef VM
 	supplemental_page_table_init (&thread_current ()->spt);
 #endif
 
-	process_init ();
+	// process_init ();
 
 	if (process_exec (f_name) < 0)
 		PANIC("Fail to launch initd\n");
@@ -79,10 +103,30 @@ initd (void *f_name) {
 /* Clones the current process as `name`. Returns the new process's thread id, or
  * TID_ERROR if the thread cannot be created. */
 tid_t
-process_fork (const char *name, struct intr_frame *if_ UNUSED) {
+process_fork (const char *name, struct intr_frame *if_) {
 	/* Clone current thread to new thread.*/
-	return thread_create (name,
-			PRI_DEFAULT, __do_fork, thread_current ());
+	/*--------- Project 2-3 syscall --------*/
+	struct thread *cur = thread_current();
+	memcpy(&cur->parent_if, if_, sizeof(struct intr_frame)); // pass this intr_frame down to child
+	
+	tid_t tid = thread_create(name, PRI_DEFAULT, __do_fork, cur);
+	if (tid == TID_ERROR)
+		return TID_ERROR;
+	
+	struct thread *child = get_child_with_pid(tid);
+	sema_down(&child->fork_sema); // wait until child loads
+	if (child->exit_status == -1)
+		return TID_ERROR;
+
+	/*--------- Project 2-3 end --------*/
+	
+	// return thread_create (name,
+	// 		PRI_DEFAULT, __do_fork, thread_current ());
+
+#ifdef DEBUG_WAIT
+	printf("[process_fork] pid %d : child %s\n", tid, child->name);
+#endif
+	return tid;
 }
 
 #ifndef VM
@@ -97,42 +141,117 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 	bool writable;
 
 	/* 1. TODO: If the parent_page is kernel page, then return immediately. */
+	/*----------Project 2-3(?). -----------*/
+	if (is_kernel_vaddr(va))
+	{
+#ifdef DEBUG
+		//printf("[fork-duplicate] fail at step 1 %llx\n", va);
+#endif
+		return true; // return false ends pml4_for_each, which is undesirable - just return true to pass this kernel va
+	}
+	else
+	{
+#ifdef DEBUF
+		printf("[fork-duplicate] pass at step 1 %llx\n", va);
+#endif
+	}
 
+#ifdef DEBUF
+	printf("Is user %d, is kernel %d, writable %d\n", is_user_ptr(ptr), is_kernel_pte(pte), is_writable(pte));
+#endif	
+	/*----------Project 2-3(?). end -----------*/
 	/* 2. Resolve VA from the parent's page map level 4. */
 	parent_page = pml4_get_page (parent->pml4, va);
+	/*----------Project 2-3(?). -----------*/
+	if (parent_page == NULL)
+	{
+		printf("[fork-duplicate] failed to fetch page for user vaddr 'va'\n"); // #ifdef DEBUF
+		return false;
+	}	
+
+#ifdef DEBUF
+	// page table, virtual address 이해
+	// 'pte' here = address pointing to one page table entry
+	// *pte = page table entry = address of the physical frame
+	void *test = ptov(PTE_ADDR(*pte)) + pg_ofs(va); // should be same as  parent_page -> Yes!
+	uint64_t va_offset = pg_ofs(va); 				// sould be 0; va comes from PTE, so there must be no 12bit physical offset
+#endif
+	/*----------Project 2-3(?). end -----------*/
 
 	/* 3. TODO: Allocate new PAL_USER page for the child and set result to
 	 *    TODO: NEWPAGE. */
+	/*----------Project 2-3(?). -----------*/
+	newpage = palloc_get_page(PAL_USER);
+	if (newpage == NULL)
+	{
+		printf("[fork-duplicate] failed to palloc new page\n"); // #ifdef DEBUG
+		return false;
+	}
+	
 
 	/* 4. TODO: Duplicate parent's page to the new page and
 	 *    TODO: check whether parent's page is writable or not (set WRITABLE
 	 *    TODO: according to the result). */
+	memcpy(newpage, parent_page, PGSIZE);
+	writable = is_writable(pte); // *PTE is an address that points to parent_page
+
+	/*----------Project 2-3(?). end-----------*/
 
 	/* 5. Add new page to child's page table at address VA with WRITABLE
 	 *    permission. */
 	if (!pml4_set_page (current->pml4, va, newpage, writable)) {
 		/* 6. TODO: if fail to insert page, do error handling. */
+		/*----------Project 2-3(?). -----------*/
+		printf("Failed to map user virtual page to given physical frame\n"); // #ifdef DEBUG
+		return false;
 	}
+#ifdef DEBUG
+	// TEST ) is 'va' correctly mapped to newpage?
+	if (pml4_get_page(current->pml4, va) != newpage)
+		printf("Not mapped!"); // never called
+
+	printf("--Completed copy--\n")
+#endif
+	/*----------Project 2-3(?). end-----------*/
 	return true;
 }
 #endif
 
+// Project2-extra
+struct MapElem
+{
+	uintptr_t key;
+	uintptr_t value;
+};
+
 /* A thread function that copies parent's execution context.
  * Hint) parent->tf does not hold the userland context of the process.
- *       That is, you are required to pass second argument of process_fork to
- *       this function. */
+ *      That is, you are required to pass second argument(intr_frame *if_)
+ *  	of process_fork to this function. */
 static void
 __do_fork (void *aux) {
-	struct intr_frame if_;
+	struct intr_frame if_; // for local stack
 	struct thread *parent = (struct thread *) aux;
 	struct thread *current = thread_current ();
 	/* TODO: somehow pass the parent_if. (i.e. process_fork()'s if_) */
 	struct intr_frame *parent_if;
+	/*------Project 2-3. syscall fork------*/
+	parent_if = &parent->parent_if; // cpu context. parent에 parent_if 값이  aux 때문에 들어간건가?
+	/*------Project 2-3. end------*/
 	bool succ = true;
 
-	/* 1. Read the cpu context to local stack. */
-	memcpy (&if_, parent_if, sizeof (struct intr_frame));
+/*------Project 2-3. syscall fork------*/
+#ifdef DEBUG
+	printf("[Fork] Forking from %s to %s\n", parent->name, current->name);
+#endif
+/*------Project 2-3. end------*/
 
+	/* 1. Read the cpu context to local stack. */
+	memcpy (&if_, parent_if, sizeof (struct intr_frame)); // if_ : local stack, parent_if : cpu context
+	/*------Project 2-3. syscall fork------*/
+	if_.R.rax = 0; // fork return value for child
+	/*------Project 2-3. end------*/
+	
 	/* 2. Duplicate PT */
 	current->pml4 = pml4_create();
 	if (current->pml4 == NULL)
@@ -154,13 +273,72 @@ __do_fork (void *aux) {
 	 * TODO:       from the fork() until this function successfully duplicates
 	 * TODO:       the resources of parent.*/
 
-	process_init ();
+	// process_init ();
+
+	/*------Project 2-3. syscall fork------*/
+	// multi-oom) Failed to duplicate?
+	if (parent->fdIdx == FDCOUNT_LIMIT)
+		goto error;
+	
+	// Project2-extra) multiple fds sharing same file - use associative map (e. g. dict, hashmap) to duplicate these relationships
+	// other test-cases like multi-oom don't need this feature
+	const int MAPLEN = 10;
+	struct MapElem map[10]; // key - parent's struct file *, value - child's newly created struct file *
+	int dupCount = 0; 		// index for filling map
+
+	for (int i = 0; i < FDCOUNT_LIMIT; i++)
+	{
+		struct file *file = parent->fdTable[i];
+		if(file == NULL)
+			continue;
+
+		// Project2-extra) linear search on key-pair array
+		// If 'file' is already duplicated in child, don't duplicate again but share it
+		bool found = false;
+		for (int j = 0; j < MAPLEN; j++)
+		{
+			if (map[j].key == file)
+			{
+				found = true;
+				current->fdTable[i] = map[j].value;
+				break;
+			}
+		}
+		if (!found)
+		{
+			struct file *new_file;
+			if(file >2)
+				new_file = file_duplicate(file);
+			else
+				new_file = file; // 1 STDIN, 2 STDOUT
+			
+			current->fdTable[i] = new_file;
+			if (dupCount < MAPLEN)
+			{
+				map[dupCount].key = file;
+				map[dupCount++].value = new_file;
+			}
+		}
+	}
+	current->fdIdx = parent->fdIdx;
+
+#ifdef DEBUG
+	printf("[do_fork] %s Ready to switch!\n", current->name);
+#endif
+	//child loaded successfully, wake up parent in process_fork
+	sema_up(&current->fork_sema);
+	/*------Project 2-3. end------*/
 
 	/* Finally, switch to the newly created process. */
 	if (succ)
 		do_iret (&if_);
 error:
-	thread_exit ();
+	// thread_exit (); // 원래 있던 거 
+	/*------Project 2-3. syscall fork------*/
+	current->exit_status = TID_ERROR;
+	sema_up(&current->fork_sema);
+	exit(TID_ERROR);
+	/*------Project 2-3. end------*/
 }
 
 /* Switch the current execution context to the f_name.
@@ -182,7 +360,6 @@ process_exec (void *f_name) {
 	/* We first kill the current context */
 	process_cleanup ();
 
-
 	/*--------Project 2-1. Pass args - parse ----------*/
 	char *argv[30];
 	int argc = 0;
@@ -198,10 +375,8 @@ process_exec (void *f_name) {
 		argc++;
 	}
 	/*--------Project 2-1. end ----------*/
-
 	/* And then load the binary */
 	success = load (file_name, &_if);
-
 	/* If load failed, quit. */
 	
 	if (!success){
@@ -221,7 +396,7 @@ process_exec (void *f_name) {
 	 * 메모리 내용을 16진수로 화면에 출력
 	 * 유저 스택에 인자를 저장 후 유저 스택 메모리 확인
 	 */
-	hex_dump(_if.rsp, _if.rsp, USER_STACK - (uint64_t)*rspp, true); // #ifdef DEBUG
+	// hex_dump(_if.rsp, _if.rsp, USER_STACK - (uint64_t)*rspp, true); // #ifdef DEBUG
 
 	palloc_free_page (file_name);
 
@@ -287,19 +462,83 @@ process_wait (tid_t child_tid UNUSED) {
 	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
-	return -1;
+	
+	// busy waiting #ifdef DEBUG
+	for (int i = 0; i < 100000000; i++)
+		;
+
+	struct thread *cur = thread_current();
+
+#ifdef DEBUF_WAIT
+	printf("\nparent children # : %d\n", list_size(&cur->child_list));
+
+	printf("Head - ");
+	for (struct list_elem *e = list_begin(&cur->child_list); e != list_end(&cur->child_list); e = list_next(e))
+	{
+		printf("%llx - ", e);
+	}
+	printf("Tail\n");
+#endif
+	struct thread *child = get_child_with_pid(child_tid);
+
+	// [Fail] Not my child
+	if (child == NULL)
+		return -1;
+
+#ifdef DEBUG_WAIT
+	printf("cur %s waits child %s - ", cur->name, child->name);
+#endif
+
+	// Parent waits until child signals (sema_up) after its execution
+	sema_down(&child->wait_sema);
+
+	int exit_status = child->exit_status;
+
+#ifdef DEBUG_WAIT
+	printf("[process_wait] Child %d %s : exit status - %d\n", child_tid, child->name, exit_status);
+#endif
+
+	// Q. 자식 프로세스의 프로세스 디스크립터 삭제??
+	// 아마 thread_create에서 palloc 한거 free 하라는 소리인 것 같다
+	// -> do_schedule에서 너무 일찍하면 exit_status같은거 날라감
+
+	// Keep child page so parent can get exit_status
+	list_remove(&child->child_elem);
+	sema_up(&child->free_sema); // wake-up child in process_exit - proceed with thread_exit
+	return exit_status;
 }
 
 /* Exit the process. This function is called by thread_exit (). */
 void
 process_exit (void) {
-	struct thread *curr = thread_current ();
+	struct thread *cur = thread_current ();
 	/* TODO: Your code goes here.
 	 * TODO: Implement process termination message (see
 	 * TODO: project2/process_termination.html).
 	 * TODO: We recommend you to implement process resource cleanup here. */
+	
+	/*-----Project 2-4. Close all opend files-----*/
+	for (int i = 0; i <FDCOUNT_LIMIT; i++)
+	{
+		close(i);
+	}
+	//palloc_free_page(cur->fdTable);
+	palloc_free_multiple(cur->fdTable, FDT_PAGES); // multi-oom
+	/*-----Project 2-4. end-----*/
 
+	/*-----Project 2-5. Close current executable run by this process-----*/
+	file_close(cur->running);
+	/*-----Project 2-5. end-----*/
 	process_cleanup ();
+
+	/*-----Project 2-4 or 5. -----*/
+	// Wake up blocked parent
+	sema_up(&cur->wait_sema);
+	// Postpone child termination until parents receives its exit status with 'wait'
+	sema_down(&cur->free_sema);
+
+	/*-----Project 2-4 or 5. end-----*/
+	
 }
 
 /* Free the current process's resources. */

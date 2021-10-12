@@ -54,7 +54,7 @@ struct disk {
 	struct channel *channel;    /* Channel disk is on. */
 	int dev_no;                 /* Device 0 or 1 for master or slave. */
 
-	bool is_ata;                /* 1=This device is an ATA disk. */
+	bool is_ata;                /* 1=This device is an ATA disk. Advanced Technology attachement */ 
 	disk_sector_t capacity;     /* Capacity in sectors (if is_ata). */
 
 	long long read_cnt;         /* Number of sectors read. */

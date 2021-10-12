@@ -5,6 +5,9 @@
         "new": "cpp",
         "synch.h": "c",
         "round.h": "c",
-        "debug.h": "c"
+        "debug.h": "c",
+        "process.h": "c",
+        "file.h": "c",
+        "*.inc": "c"
     }
 }

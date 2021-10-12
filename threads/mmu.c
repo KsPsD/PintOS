@@ -1,3 +1,5 @@
+// mmu : memory management unit. address mapping hardware 네..
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
@@ -8,6 +10,9 @@
 #include "threads/mmu.h"
 #include "intrinsic.h"
 
+// Given 'pgdir', a pointer to a page directory, pgdir_walk returns
+// a pointer to the page table entry (PTE). 
+// The programming logic and the hints are the same as pml4e_walk and pdpe_walk.
 static uint64_t *
 pgdir_walk (uint64_t *pdp, const uint64_t va, int create) {
 	int idx = PDX (va);
@@ -23,13 +28,16 @@ pgdir_walk (uint64_t *pdp, const uint64_t va, int create) {
 			} else
 				return NULL;
 		}
-		return (uint64_t *) ptov (PTE_ADDR (pdp[idx]) + 8 * PTX (va));
+		return (uint64_t *) ptov (PTE_ADDR (pdp[idx]) + 8 * PTX (va)); // physical va의 부분이 반환됨
 	}
 	return NULL;
 }
 
+// Given a pdpe i.e page directory pointer pdpe_walk returns the pointer to page table entry
+// The programming logic in this function is similar to pml4e_walk.
+// It calls the pgdir_walk which returns the page_table entry pointer.
 static uint64_t *
-pdpe_walk (uint64_t *pdpe, const uint64_t va, int create) {
+pdpe_walk (uint64_t *pdpe, const uint64_t va, int create) { // page directory pointer entry
 	uint64_t *pte = NULL;
 	int idx = PDPE (va);
 	int allocated = 0;
@@ -61,14 +69,19 @@ pdpe_walk (uint64_t *pdpe, const uint64_t va, int create) {
  * on CREATE.  If CREATE is true, then a new page table is
  * created and a pointer into it is returned.  Otherwise, a null
  * pointer is returned. */
+
+/* Given a pml4 pointer, pml4_walk returns a pointer to the page table entry(PTE)
+ * for linear address 'va'. This requres walkling the 4-level page table structure
+ 
+ *   */
 // page directory base register를 바꿈으로써 user virtual address spaces 바꿈
 uint64_t *
 pml4e_walk (uint64_t *pml4e, const uint64_t va, int create) {
 	uint64_t *pte = NULL;
-	int idx = PML4 (va);
+	int idx = PML4 (va); // va에서 pml4 index 가져옴
 	int allocated = 0;
 	if (pml4e) {
-		uint64_t *pdpe = (uint64_t *) pml4e[idx];
+		uint64_t *pdpe = (uint64_t *) pml4e[idx]; // Page Directory Pointer Entry
 		if (!((uint64_t) pdpe & PTE_P)) {
 			if (create) {
 				uint64_t *new_page = palloc_get_page (PAL_ZERO);
@@ -80,7 +93,7 @@ pml4e_walk (uint64_t *pml4e, const uint64_t va, int create) {
 			} else
 				return NULL;
 		}
-		pte = pdpe_walk (ptov (PTE_ADDR (pml4e[idx])), va, create);
+		pte = pdpe_walk (ptov (PTE_ADDR (pml4e[idx])), va, create); // PTE : Page Table Entry
 	}
 	if (pte == NULL && allocated) {
 		palloc_free_page ((void *) ptov (PTE_ADDR (pml4e[idx])));
@@ -215,10 +228,10 @@ void *
 pml4_get_page (uint64_t *pml4, const void *uaddr) {
 	ASSERT (is_user_vaddr (uaddr));
 
-	uint64_t *pte = pml4e_walk (pml4, (uint64_t) uaddr, 0);
+	uint64_t *pte = pml4e_walk (pml4, (uint64_t) uaddr, 0); // PA corresponding to user VA(uaddr) in pml4
 
 	if (pte && (*pte & PTE_P))
-		return ptov (PTE_ADDR (*pte)) + pg_ofs (uaddr);
+		return ptov (PTE_ADDR (*pte)) + pg_ofs (uaddr); // return kernel VA corresponding to PA
 	return NULL;
 }
 

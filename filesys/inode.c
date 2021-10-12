@@ -27,6 +27,10 @@ bytes_to_sectors (off_t size) {
 }
 
 /* In-memory inode. */
+/* UNIX 계통 파일 시스템에서 사용하는 자료구조. 파일들은 각자 1개의 아이노드를 가지고 있으며,
+ * 소유자 그룹, 접근 모드(읽기, 쓰기, 실행 권한), 파일 형태, 아이노드 숫자 등 해당 파일에
+ * 관한 정보를 가지고 있다. 파일 시스템 내의 파일들은 고유한 아이노드 숫자를 통해 식별 가능하다.
+ * 파일 시스템을 생성할 때, 전체 공간의 약 1퍼센트를 아이노드를 위해 할당. */
 struct inode {
 	struct list_elem elem;              /* Element in inode list. */
 	disk_sector_t sector;               /* Sector number of disk location. */
@@ -109,7 +113,7 @@ inode_open (disk_sector_t sector) {
 			e = list_next (e)) {
 		inode = list_entry (e, struct inode, elem);
 		if (inode->sector == sector) {
-			inode_reopen (inode);
+			inode_reopen (inode); // inode 의 # of open cnt ++
 			return inode; 
 		}
 	}
@@ -123,9 +127,9 @@ inode_open (disk_sector_t sector) {
 	list_push_front (&open_inodes, &inode->elem);
 	inode->sector = sector;
 	inode->open_cnt = 1;
-	inode->deny_write_cnt = 0;
+	inode->deny_write_cnt = 0; // write 가능
 	inode->removed = false;
-	disk_read (filesys_disk, inode->sector, &inode->data);
+	disk_read (filesys_disk, inode->sector, &inode->data); // filesys_disk : 파일 시스템 갖고 있는 디스크
 	return inode;
 }
 

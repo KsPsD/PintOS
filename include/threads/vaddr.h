@@ -42,6 +42,7 @@
 /* Returns true if VADDR is a user virtual address. */
 #define is_user_vaddr(vaddr) (!is_kernel_vaddr((vaddr)))
 
+// user VM : 0 ~ KERN_BASE , kernel VM : KERN_BASE ~ 임!
 /* Returns true if VADDR is a kernel virtual address. */
 #define is_kernel_vaddr(vaddr) ((uint64_t)(vaddr) >= KERN_BASE)
 

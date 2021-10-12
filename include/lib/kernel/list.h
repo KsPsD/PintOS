@@ -102,7 +102,7 @@ struct list {
    file for an example. */
 #define list_entry(LIST_ELEM, STRUCT, MEMBER)           \
 	((STRUCT *) ((uint8_t *) &(LIST_ELEM)->next     \
-		- offsetof (STRUCT, MEMBER.next)))
+		- offsetof (STRUCT, MEMBER.next))) // type struct의 member 크기
    // struct thread { tid, status, name, priority, list_elem elem, ...} 에서
    // list_elem 멤버만큼 offset 왼쪽으로 이동하면 struct thread의 포인터 --> 이후 캐스팅
    //              (struct thread *)                 & LIST_ELEM->next

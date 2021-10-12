@@ -69,7 +69,7 @@ int
 main (void) {
 	uint64_t mem_end;
 	char **argv;
-
+	
 	/* Clear BSS and get machine's RAM size. */
 	bss_init (); // 커널의 bss(block started symbol)을 초기화 
 
@@ -240,7 +240,6 @@ parse_options (char **argv) {
 static void
 run_task (char **argv) {
 	const char *task = argv[1];
-
 	printf ("Executing '%s':\n", task);
 #ifdef USERPROG
 	if (thread_tests){
