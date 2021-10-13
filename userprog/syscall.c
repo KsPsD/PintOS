@@ -110,22 +110,22 @@ syscall_handler (struct intr_frame *f) {
 		case SYS_REMOVE:
 			f->R.rax = remove(f->R.rdi);
 			break;
-		case SYS_OPEN:
+		case SYS_OPEN: // file
 			f->R.rax = open(f->R.rdi);
 			break;
-		case SYS_FILESIZE:
+		case SYS_FILESIZE: // file
 			f->R.rax = filesize(f->R.rdi);
 			break;
-		case SYS_READ:
+		case SYS_READ: // file
 			f->R.rax = read(f->R.rdi, f->R.rsi, f->R.rdx);
 			break;
-		case SYS_WRITE:
+		case SYS_WRITE: // file
 			f->R.rax = write(f->R.rdi, f->R.rsi, f->R.rdx);
 			break;
-		case SYS_SEEK:
+		case SYS_SEEK: // file
 			seek(f->R.rdi, f->R.rsi);
 			break;
-		case SYS_TELL:
+		case SYS_TELL: // file
 			f->R.rax = tell(f->R.rdi);
 			break;
 		case SYS_CLOSE:
@@ -219,6 +219,27 @@ void exit(int status) // syscall에서 호출시 status = -1 <- 가능...?
 	thread_exit();
 }
 
+
+// Create a new file called 'file' initially ;initial_size' bytes in size.
+// Creating a new file does not open it: opening the new file is a separate
+// operation which would require a 'open' system call
+// Returns true if successful, false otherwise.
+bool create (const char *file, unsigned initial_size)
+{
+	check_address(file);
+	return filesys_create(file, initial_size);
+}
+
+// Delete the file called 'file'. Returns true if successful, falase otherwise.
+// File is removed regardless of whether it is open or closed, and removing
+// an open file does not close it.
+bool remove (const char *file)
+{
+	check_address(file);
+	return filesys_remove(file);
+}
+
+
 // parent : returns pid of child on success or -1 on fail
 // child : Returns 0
 // %RBX, %RSP, %RBP, %R12, %R15 들은 callee-saved registers이므로 clone할 필요 없다. (?)
@@ -251,29 +272,9 @@ int exec(char *file_name)
 	return 0;
 }
 
-// Create a new file called 'file' initially ;initial_size' bytes in size.
-// Creating a new file does not open it: opening the new file is a separate
-// operation which would require a 'open' system call
-// Returns true if successful, falase otherwise.
-bool create (const char *file, unsigned initial_size)
-{
-	check_address(file);
-	return filesys_create(file, initial_size); // 잘 모르겠음
-}
-
-
-// Delete the file called 'file'. Returns true if successful, falase otherwise.
-// File is removed regardless of whether it is open or closed, and removing
-// an open file does not close it.
-bool remove (const char *file)
-{
-	check_address(file);
-	return filesys_remove(file);
-}
-
 // Opens the file called 'file'. return fd or -1 if the file could not be opened.
 // 
-int open (const char *file)
+int open(const char *file)
 {
 	check_address(file);
 	struct file *fileobj = filesys_open(file);
@@ -299,7 +300,7 @@ int filesize(int fd)
 
 // Read size bytes from the file open as fd into buffer
 // Returns the number of bytes actually read (0 at end of file), or -1 if the file could not be read
-// fd 값이 0일 때 키보드의 데이터를 읽어 버퍼에 저장 (input_getc() 이용)
+// STDIN 일 때, 키보드의 데이터를 읽어 버퍼에 저장 (input_getc() 이용)
 int read(int fd, void *buffer, unsigned size) // buffer : 읽은 데이터 저장할 버퍼 주소 값
 {
 	check_address(buffer);
@@ -319,13 +320,13 @@ int read(int fd, void *buffer, unsigned size) // buffer : 읽은 데이터 저�
 			remove_file_from_fdt(fd);
 			ret = -1;
 		}
-		else // fd 값이 0
+		else
 		{
 			int i;
 			unsigned char *buf = buffer;
 			for (i = 0; i <size; i++)
 			{
-				char c = input_getc();
+				char c = input_getc(); // 키보드 입력 받은거 버퍼
 				*buf++ = c;
 				if (c == '\0')
 				break;
@@ -348,7 +349,7 @@ int read(int fd, void *buffer, unsigned size) // buffer : 읽은 데이터 저�
 }
 
 // Writes size bytes from buffer to the open file fd.
-// Returns the number of bytes actually writeen, or -1 if the file could not be written
+// Returns the number of bytes actually written, or -1 if the file could not be written
 int write(int fd, const void *buffer, unsigned size)
 {
 	check_address(buffer);
@@ -373,7 +374,7 @@ int write(int fd, const void *buffer, unsigned size)
 		}
 		else
 		{
-			putbuf(buffer, size);
+			putbuf(buffer, size); // 문자열을 화면에 출력해주는 함수
 			ret = size;
 		}
 	}
@@ -399,7 +400,7 @@ void seek(int fd, unsigned position)
 	struct file *fileobj = find_file_by_fd(fd);
 	if (fileobj <= 2)
 		return;
-	fileobj->pos = position;
+	fileobj->pos = position; // file 시작지점이 0이므로 position만큼 offset 기록
 }
 
 // Returns the position of the next byte to be read or written in open file fd,
@@ -441,7 +442,8 @@ void close(int fd)
 		fileobj->dupCount--;
 }
 
-//
+// Creates 'copy' of oldfd into newfd. If newfd is open, close it. Returns newfd on success, -1 on fail (invalid oldfd)
+// After dup2, oldfd and newfd 'shares' struct file, but closing newfd should not close oldfd (important)!
 int dup2(int oldfd, int newfd)
 {
 	struct file *fileobj = find_file_by_fd(oldfd);
@@ -456,7 +458,10 @@ int dup2(int oldfd, int newfd)
 	struct thread *cur = thread_current();
 	struct file **fdt = cur->fdTable;
 
+	// Don't literally copy, but just increase its count and share the same struct file
+	// [syscall close] Only close it when count == 0
 
+	// Copy stdin or stdout to another fd
 	if (fileobj == STDIN)
 		cur->stdin_count++;
 	else if (fileobj == STDOUT)	

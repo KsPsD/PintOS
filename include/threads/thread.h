@@ -111,7 +111,7 @@ struct thread {
 	struct semaphore wait_sema; // used by parent to wait for child
 	// fork
 	struct list child_list; // keep children
-	struct list_elem child_elem; //used to put current thread into 'children' list
+	struct list_elem child_elem; // used to put current thread into 'children' list
 	
 	struct intr_frame parent_if; // to preserve my current intr_frame and pass it down to child in fork ('parent_if' in child's perspective)
 	

@@ -368,7 +368,7 @@ thread_exit (void) {
 	/* Just set our status to dying and schedule another process.
 	   We will be destroyed during the call to schedule_tail(). */
 	intr_disable ();
-	do_schedule (THREAD_DYING); // 왜 실행?
+	do_schedule (THREAD_DYING);
 	NOT_REACHED ();
 }
 

@@ -79,19 +79,19 @@ inode_create (disk_sector_t sector, off_t length) {
 	 * one sector in size, and you should fix that. */
 	ASSERT (sizeof *disk_inode == DISK_SECTOR_SIZE);
 
-	disk_inode = calloc (1, sizeof *disk_inode);
+	disk_inode = calloc (1, sizeof *disk_inode); // 0으로 초기화
 	if (disk_inode != NULL) {
 		size_t sectors = bytes_to_sectors (length);
 		disk_inode->length = length;
 		disk_inode->magic = INODE_MAGIC;
 		if (free_map_allocate (sectors, &disk_inode->start)) {
-			disk_write (filesys_disk, sector, disk_inode);
+			disk_write (filesys_disk, sector, disk_inode); // filesys_disk에 disk_inode 기록
 			if (sectors > 0) {
 				static char zeros[DISK_SECTOR_SIZE];
 				size_t i;
 
 				for (i = 0; i < sectors; i++) 
-					disk_write (filesys_disk, disk_inode->start + i, zeros); 
+					disk_write (filesys_disk, disk_inode->start + i, zeros); // 디스크 공간 할당
 			}
 			success = true; 
 		} 
@@ -113,7 +113,7 @@ inode_open (disk_sector_t sector) {
 			e = list_next (e)) {
 		inode = list_entry (e, struct inode, elem);
 		if (inode->sector == sector) {
-			inode_reopen (inode); // inode 의 # of open cnt ++
+			inode_reopen (inode); // inode 의 # of open cnt ++. Open count를 왜 counting?
 			return inode; 
 		}
 	}

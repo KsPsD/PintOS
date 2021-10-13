@@ -133,7 +133,7 @@ file_allow_write (struct file *file) {
 off_t
 file_length (struct file *file) {
 	ASSERT (file != NULL);
-	return inode_length (file->inode);
+	return inode_length (file->inode); // inode의 length가 아니라 inode에 적힌 file의 길이 값
 }
 
 /* Sets the current position in FILE to NEW_POS bytes from the

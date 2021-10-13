@@ -60,11 +60,11 @@ filesys_done (void) {
 bool
 filesys_create (const char *name, off_t initial_size) {
 	disk_sector_t inode_sector = 0;
-	struct dir *dir = dir_open_root ();
+	struct dir *dir = dir_open_root ();  // 루트 디렉토리 inode를 메모리로 로딩
 	bool success = (dir != NULL
-			&& free_map_allocate (1, &inode_sector)
-			&& inode_create (inode_sector, initial_size)
-			&& dir_add (dir, name, inode_sector));
+			&& free_map_allocate (1, &inode_sector) // 디스크 연속적 빈 공간에 할당. Allocates CNT consecutive sectors from the free map and stores the first into *SECTORP.
+			&& inode_create (inode_sector, initial_size) // 디스크 섹터에 아이노드 생성
+			&& dir_add (dir, name, inode_sector)); // 디렉토리에 파일 이름 만듦
 	if (!success && inode_sector != 0)
 		free_map_release (inode_sector, 1);
 	dir_close (dir);
@@ -84,7 +84,7 @@ filesys_open (const char *name) {
 
 	if (dir != NULL)
 		dir_lookup (dir, name, &inode);
-	dir_close (dir);
+	dir_ close (dir);
 
 	return file_open (inode);
 }
