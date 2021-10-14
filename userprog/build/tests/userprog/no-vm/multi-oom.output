@@ -14,32 +14,335 @@ Putting 'multi-oom' into the file system...
 Executing 'multi-oom':
 (multi-oom) begin
 Page fault at 0: not present error writing page in user context.
-child_6_X: dying due to interrupt 0x0e (#PF Page-Fault Exception).
-Interrupt 0x0e (#PF Page-Fault Exception) at rip=4001b0
- cr2=0000000000000000 error=               6
-rax 0000000000000000 rbx 0000000000000000 rcx 691060bf082d7331 rdx 0000000000000000
-rsp 000000004747fed0 rbp 000000004747fee0 rsi 000000000060569a rdi 00000000006055a8
-rip 00000000004001b0 r8 0000000000000000  r9 0000000000000000 r10 0000000000000000
-r11 0000000000000212 r12 0000000000000000 r13 0000000000000000 r14 0000000000000000
-r15 0000000000000000 rflags 00000206
-es: 001b ds: 001b cs: 0023 ss: 001b
-(multi-oom) crashed child should return -1.: FAILED
-child_5_O: exit(1)
-child_4_O: exit(1)
-child_3_O: exit(1)
-child_2_O: exit(1)
-child_1_O: exit(1)
-child_0_O: exit(1)
+child_6_X: exit(-1)
+Page fault at 0: not present error reading page in user context.
+child_7_X: exit(-1)
+Page fault at 0x8004000000: rights violation error writing page in user context.
+child_8_X: exit(-1)
+Page fault at 0: not present error reading page in user context.
+child_9_X: exit(-1)
+Page fault at 0: not present error writing page in user context.
+child_10_X: exit(-1)
+Page fault at 0x8004000000: rights violation error writing page in user context.
+child_11_X: exit(-1)
+Page fault at 0: not present error writing page in user context.
+child_12_X: exit(-1)
+child_13_X: exit(-1)
+child_13_O: exit(-1)
+child_12_O: exit(13)
+child_11_O: exit(13)
+child_10_O: exit(13)
+child_9_O: exit(13)
+child_8_O: exit(13)
+child_7_O: exit(13)
+child_6_O: exit(13)
+child_5_O: exit(13)
+child_4_O: exit(13)
+child_3_O: exit(13)
+child_2_O: exit(13)
+child_1_O: exit(13)
+child_0_O: exit(13)
 (multi-oom) Spawned at least 10 children.
-(multi-oom) Spawned at least 10 children.: FAILED
-multi-oom: exit(1)
+Page fault at 0: not present error writing page in user context.
+child_6_X: exit(-1)
+Page fault at 0: not present error reading page in user context.
+child_7_X: exit(-1)
+Page fault at 0x8004000000: rights violation error writing page in user context.
+child_8_X: exit(-1)
+Page fault at 0: not present error reading page in user context.
+child_9_X: exit(-1)
+Page fault at 0: not present error writing page in user context.
+child_10_X: exit(-1)
+Page fault at 0x8004000000: rights violation error writing page in user context.
+child_11_X: exit(-1)
+Page fault at 0: not present error writing page in user context.
+child_12_X: exit(-1)
+child_13_X: exit(-1)
+child_13_O: exit(-1)
+child_12_O: exit(13)
+child_11_O: exit(13)
+child_10_O: exit(13)
+child_9_O: exit(13)
+child_8_O: exit(13)
+child_7_O: exit(13)
+child_6_O: exit(13)
+child_5_O: exit(13)
+child_4_O: exit(13)
+child_3_O: exit(13)
+child_2_O: exit(13)
+child_1_O: exit(13)
+child_0_O: exit(13)
+Page fault at 0: not present error writing page in user context.
+child_6_X: exit(-1)
+Page fault at 0: not present error reading page in user context.
+child_7_X: exit(-1)
+Page fault at 0x8004000000: rights violation error writing page in user context.
+child_8_X: exit(-1)
+Page fault at 0: not present error reading page in user context.
+child_9_X: exit(-1)
+Page fault at 0: not present error writing page in user context.
+child_10_X: exit(-1)
+Page fault at 0x8004000000: rights violation error writing page in user context.
+child_11_X: exit(-1)
+Page fault at 0: not present error writing page in user context.
+child_12_X: exit(-1)
+child_13_X: exit(-1)
+child_13_O: exit(-1)
+child_12_O: exit(13)
+child_11_O: exit(13)
+child_10_O: exit(13)
+child_9_O: exit(13)
+child_8_O: exit(13)
+child_7_O: exit(13)
+child_6_O: exit(13)
+child_5_O: exit(13)
+child_4_O: exit(13)
+child_3_O: exit(13)
+child_2_O: exit(13)
+child_1_O: exit(13)
+child_0_O: exit(13)
+Page fault at 0: not present error writing page in user context.
+child_6_X: exit(-1)
+Page fault at 0: not present error reading page in user context.
+child_7_X: exit(-1)
+Page fault at 0x8004000000: rights violation error writing page in user context.
+child_8_X: exit(-1)
+Page fault at 0: not present error reading page in user context.
+child_9_X: exit(-1)
+Page fault at 0: not present error writing page in user context.
+child_10_X: exit(-1)
+Page fault at 0x8004000000: rights violation error writing page in user context.
+child_11_X: exit(-1)
+Page fault at 0: not present error writing page in user context.
+child_12_X: exit(-1)
+child_13_X: exit(-1)
+child_13_O: exit(-1)
+child_12_O: exit(13)
+child_11_O: exit(13)
+child_10_O: exit(13)
+child_9_O: exit(13)
+child_8_O: exit(13)
+child_7_O: exit(13)
+child_6_O: exit(13)
+child_5_O: exit(13)
+child_4_O: exit(13)
+child_3_O: exit(13)
+child_2_O: exit(13)
+child_1_O: exit(13)
+child_0_O: exit(13)
+Page fault at 0: not present error writing page in user context.
+child_6_X: exit(-1)
+Page fault at 0: not present error reading page in user context.
+child_7_X: exit(-1)
+Page fault at 0x8004000000: rights violation error writing page in user context.
+child_8_X: exit(-1)
+Page fault at 0: not present error reading page in user context.
+child_9_X: exit(-1)
+Page fault at 0: not present error writing page in user context.
+child_10_X: exit(-1)
+Page fault at 0x8004000000: rights violation error writing page in user context.
+child_11_X: exit(-1)
+Page fault at 0: not present error writing page in user context.
+child_12_X: exit(-1)
+child_13_X: exit(-1)
+child_13_O: exit(-1)
+child_12_O: exit(13)
+child_11_O: exit(13)
+child_10_O: exit(13)
+child_9_O: exit(13)
+child_8_O: exit(13)
+child_7_O: exit(13)
+child_6_O: exit(13)
+child_5_O: exit(13)
+child_4_O: exit(13)
+child_3_O: exit(13)
+child_2_O: exit(13)
+child_1_O: exit(13)
+child_0_O: exit(13)
+Page fault at 0: not present error writing page in user context.
+child_6_X: exit(-1)
+Page fault at 0: not present error reading page in user context.
+child_7_X: exit(-1)
+Page fault at 0x8004000000: rights violation error writing page in user context.
+child_8_X: exit(-1)
+Page fault at 0: not present error reading page in user context.
+child_9_X: exit(-1)
+Page fault at 0: not present error writing page in user context.
+child_10_X: exit(-1)
+Page fault at 0x8004000000: rights violation error writing page in user context.
+child_11_X: exit(-1)
+Page fault at 0: not present error writing page in user context.
+child_12_X: exit(-1)
+child_13_X: exit(-1)
+child_13_O: exit(-1)
+child_12_O: exit(13)
+child_11_O: exit(13)
+child_10_O: exit(13)
+child_9_O: exit(13)
+child_8_O: exit(13)
+child_7_O: exit(13)
+child_6_O: exit(13)
+child_5_O: exit(13)
+child_4_O: exit(13)
+child_3_O: exit(13)
+child_2_O: exit(13)
+child_1_O: exit(13)
+child_0_O: exit(13)
+Page fault at 0: not present error writing page in user context.
+child_6_X: exit(-1)
+Page fault at 0: not present error reading page in user context.
+child_7_X: exit(-1)
+Page fault at 0x8004000000: rights violation error writing page in user context.
+child_8_X: exit(-1)
+Page fault at 0: not present error reading page in user context.
+child_9_X: exit(-1)
+Page fault at 0: not present error writing page in user context.
+child_10_X: exit(-1)
+Page fault at 0x8004000000: rights violation error writing page in user context.
+child_11_X: exit(-1)
+Page fault at 0: not present error writing page in user context.
+child_12_X: exit(-1)
+child_13_X: exit(-1)
+child_13_O: exit(-1)
+child_12_O: exit(13)
+child_11_O: exit(13)
+child_10_O: exit(13)
+child_9_O: exit(13)
+child_8_O: exit(13)
+child_7_O: exit(13)
+child_6_O: exit(13)
+child_5_O: exit(13)
+child_4_O: exit(13)
+child_3_O: exit(13)
+child_2_O: exit(13)
+child_1_O: exit(13)
+child_0_O: exit(13)
+Page fault at 0: not present error writing page in user context.
+child_6_X: exit(-1)
+Page fault at 0: not present error reading page in user context.
+child_7_X: exit(-1)
+Page fault at 0x8004000000: rights violation error writing page in user context.
+child_8_X: exit(-1)
+Page fault at 0: not present error reading page in user context.
+child_9_X: exit(-1)
+Page fault at 0: not present error writing page in user context.
+child_10_X: exit(-1)
+Page fault at 0x8004000000: rights violation error writing page in user context.
+child_11_X: exit(-1)
+Page fault at 0: not present error writing page in user context.
+child_12_X: exit(-1)
+child_13_X: exit(-1)
+child_13_O: exit(-1)
+child_12_O: exit(13)
+child_11_O: exit(13)
+child_10_O: exit(13)
+child_9_O: exit(13)
+child_8_O: exit(13)
+child_7_O: exit(13)
+child_6_O: exit(13)
+child_5_O: exit(13)
+child_4_O: exit(13)
+child_3_O: exit(13)
+child_2_O: exit(13)
+child_1_O: exit(13)
+child_0_O: exit(13)
+Page fault at 0: not present error writing page in user context.
+child_6_X: exit(-1)
+Page fault at 0: not present error reading page in user context.
+child_7_X: exit(-1)
+Page fault at 0x8004000000: rights violation error writing page in user context.
+child_8_X: exit(-1)
+Page fault at 0: not present error reading page in user context.
+child_9_X: exit(-1)
+Page fault at 0: not present error writing page in user context.
+child_10_X: exit(-1)
+Page fault at 0x8004000000: rights violation error writing page in user context.
+child_11_X: exit(-1)
+Page fault at 0: not present error writing page in user context.
+child_12_X: exit(-1)
+child_13_X: exit(-1)
+child_13_O: exit(-1)
+child_12_O: exit(13)
+child_11_O: exit(13)
+child_10_O: exit(13)
+child_9_O: exit(13)
+child_8_O: exit(13)
+child_7_O: exit(13)
+child_6_O: exit(13)
+child_5_O: exit(13)
+child_4_O: exit(13)
+child_3_O: exit(13)
+child_2_O: exit(13)
+child_1_O: exit(13)
+child_0_O: exit(13)
+Page fault at 0: not present error writing page in user context.
+child_6_X: exit(-1)
+Page fault at 0: not present error reading page in user context.
+child_7_X: exit(-1)
+Page fault at 0x8004000000: rights violation error writing page in user context.
+child_8_X: exit(-1)
+Page fault at 0: not present error reading page in user context.
+child_9_X: exit(-1)
+Page fault at 0: not present error writing page in user context.
+child_10_X: exit(-1)
+Page fault at 0x8004000000: rights violation error writing page in user context.
+child_11_X: exit(-1)
+Page fault at 0: not present error writing page in user context.
+child_12_X: exit(-1)
+child_13_X: exit(-1)
+child_13_O: exit(-1)
+child_12_O: exit(13)
+child_11_O: exit(13)
+child_10_O: exit(13)
+child_9_O: exit(13)
+child_8_O: exit(13)
+child_7_O: exit(13)
+child_6_O: exit(13)
+child_5_O: exit(13)
+child_4_O: exit(13)
+child_3_O: exit(13)
+child_2_O: exit(13)
+child_1_O: exit(13)
+child_0_O: exit(13)
+Page fault at 0: not present error writing page in user context.
+child_6_X: exit(-1)
+Page fault at 0: not present error reading page in user context.
+child_7_X: exit(-1)
+Page fault at 0x8004000000: rights violation error writing page in user context.
+child_8_X: exit(-1)
+Page fault at 0: not present error reading page in user context.
+child_9_X: exit(-1)
+Page fault at 0: not present error writing page in user context.
+child_10_X: exit(-1)
+Page fault at 0x8004000000: rights violation error writing page in user context.
+child_11_X: exit(-1)
+Page fault at 0: not present error writing page in user context.
+child_12_X: exit(-1)
+child_13_X: exit(-1)
+child_13_O: exit(-1)
+child_12_O: exit(13)
+child_11_O: exit(13)
+child_10_O: exit(13)
+child_9_O: exit(13)
+child_8_O: exit(13)
+child_7_O: exit(13)
+child_6_O: exit(13)
+child_5_O: exit(13)
+child_4_O: exit(13)
+child_3_O: exit(13)
+child_2_O: exit(13)
+child_1_O: exit(13)
+child_0_O: exit(13)
+(multi-oom) success. Program forked 10 iterations.
+(multi-oom) end
+multi-oom: exit(0)
 Execution of 'multi-oom' complete.
-Timer: 590 ticks
-Thread: 30 idle ticks, 96 kernel ticks, 465 user ticks
+Timer: 1790 ticks
+Thread: 30 idle ticks, 116 kernel ticks, 1645 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 1848 reads, 242 writes
+hd0:1: 50991 reads, 242 writes
 hd1:0: 107 reads, 0 writes
-Console: 1728 characters output
+Console: 11227 characters output
 Keyboard: 0 keys pressed
-Exception: 1 page faults
+Exception: 77 page faults
 Powering off...

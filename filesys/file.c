@@ -13,6 +13,9 @@ file_open (struct inode *inode) {
 		file->inode = inode;
 		file->pos = 0;
 		file->deny_write = false;
+
+		file->dupCount = 0; // Project 2 extra
+
 		return file;
 	} else {
 		inode_close (inode);
@@ -37,6 +40,9 @@ file_duplicate (struct file *file) {
 		nfile->pos = file->pos;
 		if (file->deny_write)
 			file_deny_write (nfile);
+
+		// Project2-extra
+		nfile->dupCount = file->dupCount;
 	}
 	return nfile;
 }

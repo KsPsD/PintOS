@@ -13,6 +13,7 @@
 #include "userprog/process.h" // fork
 #include "filesys/filesys.h" // create
 #include "filesys/file.h"
+#include <string.h>
 /*------- Project 2-3. end -------*/
 #include "intrinsic.h"
 
@@ -214,7 +215,7 @@ void exit(int status) // syscall에서 호출시 status = -1 <- 가능...?
 {
 	struct thread *cur = thread_current();
 	cur->exit_status = status;
-
+	
 	printf("%s: exit(%d)\n", thread_name(), status); // Process Termination Message
 	thread_exit();
 }
@@ -248,7 +249,7 @@ tid_t fork(const char *thread_name, struct intr_frame *f) // 다시 마저 하�
 	return process_fork(thread_name, f);
 }
 
-// Run new 'executable' from current process
+// Run new 'executable(실행 파일)' from current process
 // Don't confuse with open! 'open' just opens up any file (txt, executable), 'exec' runs only executable
 // Never returns on success. Returns -1 on fail.
 int exec(char *file_name)

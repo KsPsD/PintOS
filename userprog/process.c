@@ -236,7 +236,7 @@ __do_fork (void *aux) {
 	/* TODO: somehow pass the parent_if. (i.e. process_fork()'s if_) */
 	struct intr_frame *parent_if;
 	/*------Project 2-3. syscall fork------*/
-	parent_if = &parent->parent_if; // cpu context. parent에 parent_if 값이  aux 때문에 들어간건가?
+	parent_if = &parent->parent_if; // cpu context. parent에 parent_if 값이  aux 때문에 들어감
 	/*------Project 2-3. end------*/
 	bool succ = true;
 
@@ -394,8 +394,7 @@ process_exec (void *f_name) {
 
 	/* pintos에서 제공하는 디버깅 툴
 	 * 메모리 내용을 16진수로 화면에 출력
-	 * 유저 스택에 인자를 저장 후 유저 스택 메모리 확인
-	 */
+	 * 유저 스택에 인자를 저장 후 유저 스택 메모리 확인 */
 	// hex_dump(_if.rsp, _if.rsp, USER_STACK - (uint64_t)*rspp, true); // #ifdef DEBUG
 
 	palloc_free_page (file_name);
@@ -464,10 +463,10 @@ process_wait (tid_t child_tid UNUSED) {
 	 * XXX:       implementing the process_wait. */
 	
 	// busy waiting #ifdef DEBUG
-	for (int i = 0; i < 100000000; i++)
-		;
+	// for (int i = 0; i < 100000000; i++)
+	// 	;
 
-	struct thread *cur = thread_current();
+	// struct thread *cur = thread_current();
 
 #ifdef DEBUF_WAIT
 	printf("\nparent children # : %d\n", list_size(&cur->child_list));
@@ -492,7 +491,7 @@ process_wait (tid_t child_tid UNUSED) {
 	// Parent waits until child signals (sema_up) after its execution
 	sema_down(&child->wait_sema);
 
-	int exit_status = child->exit_status;
+	int exit_status = child->exit_status; // 자식 스레드 종료 기록 후 자식 스
 
 #ifdef DEBUG_WAIT
 	printf("[process_wait] Child %d %s : exit status - %d\n", child_tid, child->name, exit_status);
@@ -664,6 +663,10 @@ load (const char *file_name, struct intr_frame *if_) {
 		goto done;
 	}
 
+	// Project 2-5. Deny writes to running exec
+	t->running = file;
+	file_deny_write(file);
+
 	/* Read and verify executable header. */
 	if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
 			|| memcmp (ehdr.e_ident, "\177ELF\2\1\1", 7)
@@ -743,7 +746,7 @@ load (const char *file_name, struct intr_frame *if_) {
 
 done:
 	/* We arrive here whether the load is successful or not. */
-	file_close (file);
+	// file_close (file);
 	return success;
 }
 

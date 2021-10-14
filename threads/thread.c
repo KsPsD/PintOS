@@ -533,6 +533,8 @@ init_thread (struct thread *t, const char *name, int priority) {
 	sema_init(&t->free_sema, 0);
 	/*-----Project 2-3. end----*/
 
+	t->running = NULL;
+
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should
