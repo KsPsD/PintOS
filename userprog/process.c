@@ -403,22 +403,6 @@ process_exec (void *f_name) {
 
 	palloc_free_page (file_name);
 
-
-	/*------ project 2-1 Pass args ------*/
-	// load arguments onto the user stack
-	void **rspp = &_if.rsp; // esp = rsp. stack pointer
-	load_userStack(argv, argc, rspp);
-	// R은 gp_register로 Interrupt stack frame
-	_if.R.rdi = argc;
-	_if.R.rsi = (uint64_t)*rspp + sizeof(void *);
-
-	// printf("hi kangho");
-	hex_dump(_if.rsp, _if.rsp, USER_STACK - _if.rsp, 1);
-
-	palloc_free_page(file_name); // file_name 다 쓰고 free
-	/*------ project 2-1 end -------*/
-
-
 	/* Start switched process. */
 	do_iret (&_if);
 	NOT_REACHED ();
