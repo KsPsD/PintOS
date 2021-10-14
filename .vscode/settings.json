@@ -3,6 +3,13 @@
         "istream": "cpp",
         "thread.h": "c",
         "new": "cpp",
-        "synch.h": "c"
+        "synch.h": "c",
+        "*.inc": "c",
+        "file.h": "c",
+        "vm.h": "c",
+        "process.h": "c",
+        "gdt.h": "c",
+        "intrinsic.h": "c",
+        "inode.h": "c"
     }
 }

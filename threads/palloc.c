@@ -261,7 +261,7 @@ palloc_init (void) {
    FLAGS, in which case the kernel panics. */
 void *
 palloc_get_multiple (enum palloc_flags flags, size_t page_cnt) {
-	struct pool *pool = flags & PAL_USER ? &user_pool : &kernel_pool;
+	struct pool *pool = flags & PAL_USER ? &user_pool : &kernel_pool; //유저인지 커널인지
 
 	lock_acquire (&pool->lock);
 	size_t page_idx = bitmap_scan_and_flip (pool->used_map, 0, page_cnt, false);
@@ -318,7 +318,9 @@ palloc_free_multiple (void *pages, size_t page_cnt) {
 #ifndef NDEBUG
 	memset (pages, 0xcc, PGSIZE * page_cnt);
 #endif
+	//모든 비트맵 다 있는지 확인함
 	ASSERT (bitmap_all (pool->used_map, page_idx, page_cnt));
+	//그리고 다 지움
 	bitmap_set_multiple (pool->used_map, page_idx, page_cnt, false);
 }
 
