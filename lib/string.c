@@ -100,6 +100,11 @@ memchr (const void *block_, int ch_, size_t size) {
    null pointer if C does not appear in STRING.  If C == '\0'
    then returns a pointer to the null terminator at the end of
    STRING. */
+/* delimiter = " ", file name = " S" 인 경우 
+ * 1) 처음에 s(c_)에 띄어쓰기기 있으므로 if에서 처리
+ * 2) 두 번째 s(c_)에 S의 경우 else -> else if 순으로 처리
+ * */
+
 char *
 strchr (const char *string, int c_) {
 	char c = c_;
@@ -186,7 +191,7 @@ strstr (const char *haystack, const char *needle) {
    first time this function is called, S should be the string to
    tokenize, and in subsequent calls it must be a null pointer.
    SAVE_PTR is the address of a `char *' variable used to keep
-   track of the tokenizer's position.  The return value each time
+   track of the tokenizer's position. The return value each time
    is the next token in the string, or a null pointer if no
    tokens remain.
 
@@ -216,7 +221,7 @@ outputs:
 'tokenize.'
 */
 char *
-strtok_r (char *s, const char *delimiters, char **save_ptr) {
+strtok_r (char *s, const char *delimiters, char **save_ptr) { // delimeter : 구분 문자
 	char *token;
 
 	ASSERT (delimiters != NULL);
@@ -229,7 +234,7 @@ strtok_r (char *s, const char *delimiters, char **save_ptr) {
 	ASSERT (s != NULL);
 
 	/* Skip any DELIMITERS at our current position. */
-	while (strchr (delimiters, *s) != NULL) {
+	while (strchr (delimiters, *s) != NULL) { // s가 문자열이 아니라 문자열 포인터이므로 처음엔 첫번째 문자를 가리킴
 		/* strchr() will always return nonnull if we're searching
 		   for a null byte, because every string contains a null
 		   byte (at the end). */
@@ -237,12 +242,12 @@ strtok_r (char *s, const char *delimiters, char **save_ptr) {
 			*save_ptr = s;
 			return NULL;
 		}
-
 		s++;
 	}
 
 	/* Skip any non-DELIMITERS up to the end of the string. */
 	token = s;
+
 	// 문자 다 지나고 띄어쓰기 or \0 까지 감
 	while (strchr (delimiters, *s) == NULL)
 		s++;

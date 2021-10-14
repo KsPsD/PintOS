@@ -36,7 +36,12 @@ struct gp_registers {
 
 struct intr_frame {
 	/* Pushed by intr_entry in intr-stubs.S.
-	   These are the interrupted task's saved registers. */
+	   These are the interrupted task's saved registers.
+	 * 실행중인 프로세스의 레지스터 정보, 스택 포인터, Instruction Count를 저장하는 자료구조
+	 * 인터럽트나 시스템 콜 호출 시 사용
+	 * 
+	 */
+
 	struct gp_registers R;
 	uint16_t es;
 	uint16_t __pad1;

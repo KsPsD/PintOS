@@ -65,6 +65,7 @@ static void print_stats (void);
 int main (void) NO_RETURN;
 
 /* Pintos main program. */
+// process execution 첫 시작
 int
 main (void) {
 	uint64_t mem_end;

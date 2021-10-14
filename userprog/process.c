@@ -48,6 +48,7 @@ struct thread *get_child_with_pid(int pid)
 			return t;
 	}
 	return NULL;
+
 }
 /*-------- Project 2-2. end -------*/
 
@@ -79,7 +80,7 @@ process_create_initd (const char *file_name) {
 	/*------- Project 2-1. end -------*/
 
 	/* Create a new thread to execute FILE_NAME. */
-	tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
+	tid = thread_create (file_name, PRI_MAX, initd, fn_copy);
 	if (tid == TID_ERROR)
 		palloc_free_page (fn_copy);
 	return tid;
@@ -343,10 +344,12 @@ error:
 
 /* Switch the current execution context to the f_name.
  * Returns -1 on fail. */
+// 새로운 thread를 생성해 함수 인자로 넘겨진 file name에 해당하는 유저 프로그램을 로드하고 실행시키는 함수
 int
 process_exec (void *f_name) {
 	char *file_name = f_name;
 	bool success;
+  
 	struct thread *cur = thread_current();
 
 	/* We cannot use the intr_frame in the thread structure.
@@ -375,6 +378,7 @@ process_exec (void *f_name) {
 		argc++;
 	}
 	/*--------Project 2-1. end ----------*/
+
 	/* And then load the binary */
 	success = load (file_name, &_if);
 	/* If load failed, quit. */
@@ -399,29 +403,64 @@ process_exec (void *f_name) {
 
 	palloc_free_page (file_name);
 
+
+	/*------ project 2-1 Pass args ------*/
+	// load arguments onto the user stack
+	void **rspp = &_if.rsp; // esp = rsp. stack pointer
+	load_userStack(argv, argc, rspp);
+	// R은 gp_register로 Interrupt stack frame
+	_if.R.rdi = argc;
+	_if.R.rsi = (uint64_t)*rspp + sizeof(void *);
+
+	// printf("hi kangho");
+	hex_dump(_if.rsp, _if.rsp, USER_STACK - _if.rsp, 1);
+
+	palloc_free_page(file_name); // file_name 다 쓰고 free
+	/*------ project 2-1 end -------*/
+
+
 	/* Start switched process. */
 	do_iret (&_if);
 	NOT_REACHED ();
 }
 
+/* Load user stack with arguments. argument_stack 함수와 같음
+ * 유저 스택에 프로그램 이름과 인자들을 저장하는 함수
+ * argv : 프로그램 이름과 인자가 저장되어 있는 메모리 공간, argc : 인자 수, rspp : 스택 포인터를 가리키는 주소
+ --------------------------------------------
+ * 1) 프로그램 이름 및 인자(문자열) push
+ * 2) 프로그램 이름 및 인자 주소들 push
+ * 3) argv (문자열을 가리키는 주소들의 배열을 가리킴) push
+ * 4) argc (문자열의 개수 저장) push
+ * 5) fake address(0) 저장
+ --------------------------------------------
+ */ 
 /*------- Project 2-1. Pass args - Load user stack with arguments -------*/
 void load_userStack(char **argv, int argc, void **rspp)
 {
 	// 1. Save argument strings (character by character)
 	for (int i = argc - 1; i >= 0; i--)
+
 	{
 		int N = strlen(argv[i]);
 		for (int j = N; j >= 0; j--)
 		{
-			char individual_character = argv[i][j];
+      /* 스택 주소를 감소시키면서 인자를 스택에 삽입 
+			 * 한자씩 넣음
+			 */
+      char individual_character = argv[i][j];
 			(*rspp)--;
+      // rspp를 char형으로 캐스팅 한 후 값을 갱신
+   
 			**(char **)rspp = individual_character; // 1 byte
 		}
 		argv[i] = *(char **)rspp; // push this address too
 	}
 
 	// 2. Word-align padding
+
 	int pad = (int)*rspp % 8;
+
 	for (int k = 0; k < pad; k++)
 	{
 		(*rspp)--;
@@ -437,15 +476,17 @@ void load_userStack(char **argv, int argc, void **rspp)
 	for (int i = argc - 1; i >= 0; i--)
 	{
 		(*rspp) -= PTR_SIZE;
+
+		// 이중 포인터를 삼중 캐스팅 한다는 의미는 rsp가 가리키는 값을 주소 값으로, 즉 포인터로 이용한다는 의미
 		**(char ***)rspp = argv[i];
 	}
 
-	// 4. Return address
+	// 4. Return addres
 	(*rspp) -= PTR_SIZE;
 	**(void ***)rspp = (void *)0;
 }
-/*------- Project 2-1. end -------*/
 
+/*------- Project 2_1 end ---------*/
 
 /* Waits for thread TID to die and returns its exit status.  If
  * it was terminated by the kernel (i.e. killed due to an
@@ -651,7 +692,7 @@ load (const char *file_name, struct intr_frame *if_) {
 	int i;
 
 	/* Allocate and activate page directory. */
-	t->pml4 = pml4_create ();
+	t->pml4 = pml4_create (); // page map level 4. page table
 	if (t->pml4 == NULL)
 		goto done;
 	process_activate (thread_current ());
@@ -668,6 +709,7 @@ load (const char *file_name, struct intr_frame *if_) {
 	file_deny_write(file);
 
 	/* Read and verify executable header. */
+	// ELF 파일의 헤더 정보를 읽어와 저장
 	if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
 			|| memcmp (ehdr.e_ident, "\177ELF\2\1\1", 7)
 			|| ehdr.e_type != 2
@@ -680,6 +722,7 @@ load (const char *file_name, struct intr_frame *if_) {
 	}
 
 	/* Read program headers. */
+	// 배치 정보를 읽어와 저장
 	file_ofs = ehdr.e_phoff;
 	for (i = 0; i < ehdr.e_phnum; i++) {
 		struct Phdr phdr;
@@ -722,6 +765,7 @@ load (const char *file_name, struct intr_frame *if_) {
 						read_bytes = 0;
 						zero_bytes = ROUND_UP (page_offset + phdr.p_memsz, PGSIZE);
 					}
+					// 배치정보를 통해 파일을 메모리에 적재
 					if (!load_segment (file, file_page, (void *) mem_page,
 								read_bytes, zero_bytes, writable))
 						goto done;
@@ -733,6 +777,7 @@ load (const char *file_name, struct intr_frame *if_) {
 	}
 
 	/* Set up stack. */
+	// 스택 초기화
 	if (!setup_stack (if_))
 		goto done;
 

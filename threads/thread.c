@@ -226,11 +226,12 @@ thread_create (const char *name, int priority, thread_func *function, void *aux)
 	ASSERT (function != NULL);
 
 	/* Allocate thread. */
-	t = palloc_get_page (PAL_ZERO);
+	t = palloc_get_page (PAL_ZERO); // 페이지 할당
 	if (t == NULL)
 		return TID_ERROR;
 
 	/* Initialize thread. */
+
 	init_thread (t, name, priority);
 
 	// 2-4 File descriptor
@@ -246,6 +247,7 @@ thread_create (const char *name, int priority, thread_func *function, void *aux)
 	t->stdout_count = 1;
 
 	tid = t->tid = allocate_tid ();
+
 
 	/*-----Project 2-3. Parent child-----*/
 	struct thread *cur = thread_current();

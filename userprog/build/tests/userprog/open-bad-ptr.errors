@@ -1,0 +1,13 @@
+Failed to import the site module
+Traceback (most recent call last):
+  File "/usr/lib/python3.6/site.py", line 79, in <module>
+    import os
+  File "/usr/lib/python3.6/os.py", line 652, in <module>
+    from _collections_abc import MutableMapping
+  File "/usr/lib/python3.6/_collections_abc.py", line 722, in <module>
+    KeysView.register(dict_keys)
+  File "/usr/lib/python3.6/abc.py", line 158, in register
+    if issubclass(subclass, cls):
+  File "/usr/lib/python3.6/abc.py", line 227, in __subclasscheck__
+    for scls in cls.__subclasses__():
+KeyboardInterrupt
