@@ -253,7 +253,7 @@ palloc_init (void) {
 	return ext_mem.end;
 }
 
-/* Obtains and returns a group of PAGE_CNT contiguous free pages.
+/* Obtains and returns a group of PAGE_CNT contiguous(연속한, 인접한) free pages.
    If PAL_USER is set, the pages are obtained from the user pool,
    otherwise from the kernel pool.  If PAL_ZERO is set in FLAGS,
    then the pages are filled with zeros.  If too few pages are
@@ -293,7 +293,7 @@ palloc_get_multiple (enum palloc_flags flags, size_t page_cnt) {
    FLAGS, in which case the kernel panics. */
 void *
 palloc_get_page (enum palloc_flags flags) {
-	return palloc_get_multiple (flags, 1);
+	return palloc_get_multiple (flags, 1); // kernel VA
 }
 
 /* Frees the PAGE_CNT pages starting at PAGES. */

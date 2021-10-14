@@ -16,6 +16,10 @@ bool sema_try_down (struct semaphore *);
 void sema_up (struct semaphore *);
 void sema_self_test (void);
 
+/* ----- project1: priority scheduling(2) ----- */
+bool sema_compare_priority(const struct list_elem *, const struct list_elem *, void *aux);
+
+
 /* Lock. */
 struct lock {
 	struct thread *holder;      /* Thread holding lock (for debugging). */
@@ -29,6 +33,8 @@ void lock_release (struct lock *);
 bool lock_held_by_current_thread (const struct lock *);
 
 /* Condition variable. */
+// thread를 기다리게 하거나, waiters에서 기다리고 있는 thread들에게 signal을 보낼 수 있다.
+// wating list에 들어가는 것이 thread인가 semaphore인가..?
 struct condition {
 	struct list waiters;        /* List of waiting threads. */
 };

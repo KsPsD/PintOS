@@ -1,9 +1,11 @@
 #ifndef THREADS_THREAD_H
 #define THREADS_THREAD_H
-
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
+/*------- Project 2-2. syscall-------*/
+#include "threads/synch.h"
+/*------- Project 2-2. end-------*/
 #include "threads/interrupt.h"
 #ifdef VM
 #include "vm/vm.h"
@@ -51,9 +53,9 @@ typedef int tid_t;
  *           |                                 |
  *           |                                 |
  *           +---------------------------------+
- *           |              magic              |
- *           |            intr_frame           |
- *           |                :                |
+ *           |              magic              | <- magic 넘어가면 overflow
+ *           |            intr_frame           | 
+ *           |                :                | 이 구간이 스레드의 PBC에 해당
  *           |                :                |
  *           |               name              |
  *           |              status             |
@@ -91,6 +93,42 @@ struct thread {
 	enum thread_status status;          /* Thread state. */
 	char name[16];                      /* Name (for debugging purposes). */
 	int priority;                       /* Priority. */
+	
+	/*-------Project 1, priority_donation------*/
+	int init_priority; // thread 양도 받았다가 다시 반납할 때 원래의 priority 복원 위해
+
+	struct lock *wait_on_lock; // thread가 현재 얻기 위해 기다리고 있는 lock으로 스레드는 이 lock이 release되기를 기다린다.
+	struct list donations; // 자신에게 priority를 나누어준 스레드들의 리스트
+	struct list_elem donation_elem; // donations list를 관리하기 위한 element로 thread 구조체의 그냥 elem과 구분하여 사용
+	/*-------Project 1 end------*/
+	
+	/*-------Project 1, alarm clock------*/
+	int64_t wakeup_tick;				// 깨어나야 할 tick값
+	/*-------Project 1 end------*/
+
+	/*-------Project 2-3. syscalls------*/
+	int exit_status; // used to deliver child exit_status to parent
+	struct semaphore wait_sema; // used by parent to wait for child
+	// fork
+	struct list child_list; // keep children
+	struct list_elem child_elem; // used to put current thread into 'children' list
+	
+	struct intr_frame parent_if; // to preserve my current intr_frame and pass it down to child in fork ('parent_if' in child's perspective)
+	
+	struct semaphore fork_sema; // parent wait (process_wait) until child fork completes (__do_fork)
+	struct semaphore free_sema; // Postpone child termination (process_exit) until parent receives its exit_stauts in 'wait' (process_wait)
+	
+	/*-------Project 2-3. end------*/
+
+	/*-------Project 2-4. file descriptor------*/
+	struct file **fdTable; // allocation in thread_create (thread.c)
+	int fdIdx; 			   // an index of an open spot in fdTable
+	/*-------Project 2-4. deny exec writes------*/
+	struct file *running; // executable ran by current process (process.c load, process_exit)
+	// 2-extra - count the number of open stdin/stdout
+	// dup2 may copy stdin or stdout; stdin or stdout is not really closed until these counts goes 0
+	int stdin_count;
+	int stdout_count;
 
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
@@ -113,6 +151,19 @@ struct thread {
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
 extern bool thread_mlfqs;
+
+/* -------- project1: alarm clock ---------*/
+void thread_sleep(int64_t ticks);
+void thread_awake(int64_t ticks);
+void update_next_tick_to_awake(int64_t ticks);
+int64_t get_next_tick_to_awake(void);
+/* ------------project1 end -------------- */
+
+/* -------- project1: priority scheduling ---------*/
+void test_max_priority (void);
+
+/* -------- project1 end ---------*/
+bool cmp_priority (const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
 
 void thread_init (void);
 void thread_start (void);
@@ -142,5 +193,10 @@ int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
 void do_iret (struct intr_frame *tf);
+
+// 나는 2-3에서 일단 구현
+// 2-4 syscall - fork
+#define FDT_PAGES 3						  // pages to allocate for file descriptor tables (thread_create, process_exit)
+#define FDCOUNT_LIMIT FDT_PAGES *(1 << 9) // Limit fdIdx
 
 #endif /* threads/thread.h */

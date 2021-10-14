@@ -38,6 +38,10 @@
  * the copyright notices, if any, listed below.
  */
 
+/* 여기서 로딩은 pintos의 첫 실행시 진행되는 부팅의 과정을 나타낸다. 부팅이란 컴퓨터가 구동하여 기초적인
+ 초기화 작업을 수행하고 운영 체제를 읽어오는 일련의 작업을 말한다. 로더(Loader)는 이러한 부팅 작업을
+ 진행하는 프로그램으로 장치(Disk)의 첫 번째 섹터에 저장되어 있다. */
+
 #include "threads/loader.h"
 	
 #### Kernel loader.
@@ -50,6 +54,14 @@
 #### memory, and jumps to the first byte of the kernel, where start.S
 #### is linked.
 	
+/* BIOS가 로더(Loader)를 메모리에 로드한다. BIOS는 컴퓨터가 구동된 후 저장 장치의 
+   첫 번째 섹터(Sector)를 탐색하여 이 장치가 부팅 가능 한지 검사한다.
+ * Sector : Disk에서 데이터를 저장하는 최소 단위로 한 섹터 512 bytes
+ * 이 첫 번째 섹터를 MBR(Master Boot Record)라 하고 부팅 가능 장치임을 나타내기 위해
+   섹터의 마지막 2 bytes가 0xAA55 (Magic Number)의 값을 가져야 한다.
+ * 부팅 가능 장치임이 판명되면 BIOS는 첫 번째 섹터를 읽어서 메모리의 0x7c00위치에 올려놓고
+   작업을 시작 */
+
 /* Flags in control register 0. */
 #define CR0_PE 0x00000001      /* Protection Enable. */
 #define CR0_EM 0x00000004      /* (Floating-point) Emulation. */
@@ -85,8 +97,13 @@ start:
 	movw $0x7c00, %sp
 	
 #### Enable A20.  Address line 20 is tied to low when the machine
-#### boots, which prevents addressing memory about 1 MB.  This code
+#### boots, which prevents addressing memory about 1 MB(2^20). This code
 #### fixes it.
+/* A20 line (CPU's address line numbered 20) 
+ * x86 기반의 CPU의 numbered 20 adddress bus line에 있는 and gate를 말한다.
+ * 20 bit 에서 32bit 아키텍처로 넘어가는 기점에서 원래의 20bit를 기반으로 구현된 프로그램을
+ * 실행할 때, 아키텔처 차이로 인한 오버플로우를 막고 하위호환을 위해 20번째 address bus line에
+ * and gate를 달아서 20bit 아키텍처에서와 같은 동작을 하도록 만든 gate이다. */
 	
 # Poll status register while busy.
 
@@ -310,4 +327,5 @@ args:
 #### Boot-sector signature.
 #### The BIOS checks that this is set properly.
 	.org LOADER_SIG - LOADER_BASE
-	.word 0xaa55
+	.word 0xaa55 # 섹터의 마지막 2bytes가 0xAA55이어야 부팅 가능한 장치임을 나타냄.(Magic Number)
+# 부팅 가능한 장치임이 판명되면 BIOS는 이 첫 번 째 섹터를 읽어서 메모리의 0x7c00 위치에 올려놓고 작업을 시작한다.

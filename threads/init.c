@@ -70,47 +70,49 @@ int
 main (void) {
 	uint64_t mem_end;
 	char **argv;
-
+	
 	/* Clear BSS and get machine's RAM size. */
-	bss_init ();
+	bss_init (); // 커널의 bss(block started symbol)을 초기화 
 
 	/* Break command line into arguments and parse options. */
-	argv = read_command_line ();
-	argv = parse_options (argv);
+	argv = read_command_line (); // kernel command line을 읽어온다.
+	argv = parse_options (argv); // command line에서 options을 읽어온다.
 
 	/* Initialize ourselves as a thread so we can use locks,
 	   then enable console locking. */
-	thread_init ();
-	console_init ();
+	thread_init (); // 쓰레드 시스템 초기화
+	console_init (); // 콘솔 초기화 -> 콘솔 초기화 이후 printf()를 사용 가능
 
 	/* Initialize memory system. */
-	mem_end = palloc_init ();
-	malloc_init ();
-	paging_init (mem_end);
+	// 커널의 메모리 시스템 초기화
+	mem_end = palloc_init (); // page allocator 설정
+	malloc_init (); // 사용자 메모리 할당(malloc 함수)이 가능하게 설정
+	paging_init (mem_end); // loader.S에서 구성했던 페이지 테이블을 다시 구성
 
 #ifdef USERPROG
-	tss_init ();
-	gdt_init ();
+	tss_init (); // tss : task state segment 커널이 task 관리시 필요한 정보가 들어있는 segment
+	gdt_init (); // gdt : global description table 커널이 task 관리시 필요한 정보가 들어있는 segment
 #endif
 
 	/* Initialize interrupt handlers. */
-	intr_init ();
-	timer_init ();
-	kbd_init ();
-	input_init ();
+	// 인터럽트 초기화 
+	intr_init (); // IDT (interrupt Descriptor Table)를 초기화. 
+	timer_init (); // 타이머 인터럽트 초기화
+	kbd_init (); // 키보드 인터럽트 초기화
+	input_init (); // input 모듈 초기화
 #ifdef USERPROG
-	exception_init ();
-	syscall_init ();
+	exception_init (); // 예외처리 인터럽트 초기화
+	syscall_init (); // 시스템 콜 인터럽트 초기화
 #endif
 	/* Start thread scheduler and enable interrupts. */
-	thread_start ();
-	serial_init_queue ();
-	timer_calibrate ();
+	thread_start (); // idle thread 생성하여 동작시키고 인터럽트 활성화
+	serial_init_queue (); // serial로부터 인터럽트를 받아 커널을 제어할 수 있도록 한다
+	timer_calibrate (); // 정확한 시간 측정을 위해 timer를 보정
 
 #ifdef FILESYS
 	/* Initialize file system. */
 	disk_init ();
-	filesys_init (format_filesys);
+	filesys_init (format_filesys); // 파일 시스템을 초기화
 #endif
 
 #ifdef VM
@@ -239,7 +241,6 @@ parse_options (char **argv) {
 static void
 run_task (char **argv) {
 	const char *task = argv[1];
-
 	printf ("Executing '%s':\n", task);
 #ifdef USERPROG
 	if (thread_tests){

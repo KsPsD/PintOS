@@ -46,7 +46,7 @@ dir_open (struct inode *inode) {
  * Return true if successful, false on failure. */
 struct dir *
 dir_open_root (void) {
-	return dir_open (inode_open (ROOT_DIR_SECTOR));
+	return dir_open (inode_open (ROOT_DIR_SECTOR)); // inode_open으로 inode 오픈하여 만들어 초기화 후 inode 반환. inode로 dir 오픈
 }
 
 /* Opens and returns a new directory for the same inode as DIR.

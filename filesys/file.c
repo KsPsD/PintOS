@@ -3,13 +3,6 @@
 #include "filesys/inode.h"
 #include "threads/malloc.h"
 
-/* An open file. */
-struct file {
-	struct inode *inode;        /* File's inode. */
-	off_t pos;                  /* Current position. */
-	bool deny_write;            /* Has file_deny_write() been called? */
-};
-
 /* Opens a file for the given INODE, of which it takes ownership,
  * and returns the new file.  Returns a null pointer if an
  * allocation fails or if INODE is null. */
@@ -20,6 +13,9 @@ file_open (struct inode *inode) {
 		file->inode = inode;
 		file->pos = 0;
 		file->deny_write = false;
+
+		file->dupCount = 0; // Project 2 extra
+
 		return file;
 	} else {
 		inode_close (inode);
@@ -44,6 +40,9 @@ file_duplicate (struct file *file) {
 		nfile->pos = file->pos;
 		if (file->deny_write)
 			file_deny_write (nfile);
+
+		// Project2-extra
+		nfile->dupCount = file->dupCount;
 	}
 	return nfile;
 }
@@ -72,7 +71,7 @@ file_get_inode (struct file *file) {
 off_t
 file_read (struct file *file, void *buffer, off_t size) {
 	off_t bytes_read = inode_read_at (file->inode, buffer, size, file->pos);
-	file->pos += bytes_read;
+	file->pos += bytes_read; // pos : current file position. 읽은 만큼 file position 변경
 	return bytes_read;
 }
 
@@ -140,7 +139,7 @@ file_allow_write (struct file *file) {
 off_t
 file_length (struct file *file) {
 	ASSERT (file != NULL);
-	return inode_length (file->inode);
+	return inode_length (file->inode); // inode의 length가 아니라 inode에 적힌 file의 길이 값
 }
 
 /* Sets the current position in FILE to NEW_POS bytes from the

@@ -54,7 +54,7 @@ struct disk {
 	struct channel *channel;    /* Channel disk is on. */
 	int dev_no;                 /* Device 0 or 1 for master or slave. */
 
-	bool is_ata;                /* 1=This device is an ATA disk. */
+	bool is_ata;                /* 1=This device is an ATA disk. Advanced Technology attachement */ 
 	disk_sector_t capacity;     /* Capacity in sectors (if is_ata). */
 
 	long long read_cnt;         /* Number of sectors read. */
@@ -221,7 +221,7 @@ disk_read (struct disk *d, disk_sector_t sec_no, void *buffer) {
 	sema_down (&c->completion_wait);
 	if (!wait_while_busy (d))
 		PANIC ("%s: disk read failed, sector=%"PRDSNu, d->name, sec_no);
-	input_sector (c, buffer);
+	input_sector (c, buffer); // read : c (memory, data register) -> buffer (sector)
 	d->read_cnt++;
 	lock_release (&c->lock);
 }
@@ -244,7 +244,7 @@ disk_write (struct disk *d, disk_sector_t sec_no, const void *buffer) {
 	issue_pio_command (c, CMD_WRITE_SECTOR_RETRY);
 	if (!wait_while_busy (d))
 		PANIC ("%s: disk write failed, sector=%"PRDSNu, d->name, sec_no);
-	output_sector (c, buffer);
+	output_sector (c, buffer); // c <- buffer
 	sema_down (&c->completion_wait);
 	d->write_cnt++;
 	lock_release (&c->lock);

@@ -23,13 +23,13 @@ struct gp_registers {
 	uint64_t r12;
 	uint64_t r11;
 	uint64_t r10;
-	uint64_t r9;
-	uint64_t r8;
-	uint64_t rsi;
-	uint64_t rdi;
+	uint64_t r9; // 일반적으로 함수의 매개변수
+	uint64_t r8; // 일반적으로 함수의 매개변수
+	uint64_t rsi; // 포인터 레지스터. Extended Source Index. 메모리 출발지를 나타냄
+	uint64_t rdi; // 포인터 레지스터. Extended Destination Index. 메모리 목적지를 나타냄
 	uint64_t rbp;
-	uint64_t rdx;
-	uint64_t rcx;
+	uint64_t rdx; // 데이터 레지스터. Extended Data Register. EAX와 같이 사용됨
+	uint64_t rcx; // 데이터 레지스터. Extended Counter Register. CPU는 루프 카운터로 ECX를 자동 사용
 	uint64_t rbx;
 	uint64_t rax;
 } __attribute__((packed));
